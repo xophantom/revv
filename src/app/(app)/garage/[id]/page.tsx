@@ -6,6 +6,8 @@ import { specRuleOptions, type AlertInput } from "@/domain/alerts";
 import { SpecSheet } from "@/components/spec/SpecSheet";
 import { KmEditor } from "@/components/vehicles/KmEditor";
 import { AlertChips } from "@/components/alerts/AlertChips";
+import { CustomAlertForm } from "@/components/alerts/CustomAlertForm";
+import { CustomAlertList } from "@/components/alerts/CustomAlertList";
 import { MaintenanceList } from "@/components/maintenance/MaintenanceList";
 import { UpgradeTimeline } from "@/components/upgrades/UpgradeTimeline";
 import { Gallery } from "@/components/gallery/Gallery";
@@ -56,6 +58,13 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     notes: u.notes,
     attachments: u.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
   }));
+  const customAlertRecords = v.customAlerts.map((c) => ({
+    id: c.id,
+    label: c.label,
+    dueKm: c.dueKm,
+    dueDate: c.dueDate ? c.dueDate.toISOString() : null,
+    done: c.done,
+  }));
   const firstKm = v.maintenances.length ? Math.min(...v.maintenances.map((m) => m.km)) : v.currentKm;
   const financeInput: FinanceInput = {
     currentKm: v.currentKm,
@@ -80,6 +89,13 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         </div>
       </section>
       <section className="mb-6"><SpecSheet vehicleId={v.id} spec={spec} /></section>
+      <section className="mb-6">
+        <div className="flex items-center justify-between">
+          <h2 className="mono text-sm text-accent">// ALERTAS PERSONALIZADOS</h2>
+          <CustomAlertForm vehicleId={v.id} />
+        </div>
+        <CustomAlertList alerts={customAlertRecords} />
+      </section>
       <Tabs defaultValue="maint">
         <TabsList>
           <TabsTrigger value="maint">Manutenções <span className="mono ml-1 text-[10px] text-accent">{v.maintenances.length}</span></TabsTrigger>
