@@ -7,6 +7,8 @@ import { SpecSheet } from "@/components/spec/SpecSheet";
 import { KmEditor } from "@/components/vehicles/KmEditor";
 import { AlertChips } from "@/components/alerts/AlertChips";
 import { MaintenanceList } from "@/components/maintenance/MaintenanceList";
+import { UpgradeTimeline } from "@/components/upgrades/UpgradeTimeline";
+import { Gallery } from "@/components/gallery/Gallery";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default async function VehiclePage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +19,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     include: {
       spec: true,
       maintenances: { include: { attachments: true }, orderBy: { date: "desc" } },
-      upgrades: { orderBy: { date: "desc" } },
+      upgrades: { include: { attachments: true }, orderBy: { date: "desc" } },
       customAlerts: true,
       attachments: { where: { kind: "image" }, orderBy: { createdAt: "desc" } },
     },
@@ -42,6 +44,16 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     notes: m.notes,
     attachments: m.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
   }));
+  const upgradeRecords = v.upgrades.map((u) => ({
+    id: u.id,
+    date: u.date.toISOString(),
+    name: u.name,
+    category: u.category,
+    costCents: u.costCents,
+    supplier: u.supplier,
+    notes: u.notes,
+    attachments: u.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
+  }));
   return (
     <div>
       <section className="mb-6 grid gap-6 md:grid-cols-[300px_1fr]">
@@ -65,8 +77,8 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
           <TabsTrigger value="finance">Financeiro</TabsTrigger>
         </TabsList>
         <TabsContent value="maint"><MaintenanceList vehicleId={v.id} specRules={specRuleOptions(spec)} records={maintRecords} /></TabsContent>
-        <TabsContent value="upg"><p className="mono text-sm text-muted">// upgrades — em breve (Fase 2)</p></TabsContent>
-        <TabsContent value="gallery"><p className="mono text-sm text-muted">// galeria — em breve (Fase 2)</p></TabsContent>
+        <TabsContent value="upg"><UpgradeTimeline vehicleId={v.id} upgrades={upgradeRecords} /></TabsContent>
+        <TabsContent value="gallery"><Gallery images={v.attachments.map((a) => ({ url: a.url, caption: a.caption }))} /></TabsContent>
         <TabsContent value="finance"><p className="mono text-sm text-muted">// financeiro — em breve (Fase 3)</p></TabsContent>
       </Tabs>
     </div>
