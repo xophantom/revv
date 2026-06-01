@@ -18,10 +18,9 @@ const vehicleInput = z.object({
   photoUrl: z.string().url().optional(),
 });
 
-async function ownVehicleOr404(id: string, userId: string) {
+async function ownedVehicle(id: string, userId: string) {
   const v = await db.vehicle.findUnique({ where: { id } });
-  if (!v || v.userId !== userId) throw new Error("not_found");
-  return v;
+  return v && v.userId === userId ? v : null;
 }
 
 export async function createVehicle(raw: unknown): Promise<ActionResult<{ id: string }>> {
@@ -35,7 +34,7 @@ export async function createVehicle(raw: unknown): Promise<ActionResult<{ id: st
 
 export async function updateVehicle(id: string, raw: unknown): Promise<ActionResult> {
   const user = await requireUser();
-  await ownVehicleOr404(id, user.id);
+  if (!(await ownedVehicle(id, user.id))) return fail("not_found");
   const parsed = vehicleInput.partial().safeParse(raw);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   await db.vehicle.update({ where: { id }, data: parsed.data });
@@ -46,7 +45,7 @@ export async function updateVehicle(id: string, raw: unknown): Promise<ActionRes
 
 export async function updateKm(id: string, currentKm: number): Promise<ActionResult> {
   const user = await requireUser();
-  await ownVehicleOr404(id, user.id);
+  if (!(await ownedVehicle(id, user.id))) return fail("not_found");
   if (!Number.isInteger(currentKm) || currentKm < 0) return fail("km inválido");
   await db.vehicle.update({ where: { id }, data: { currentKm } });
   revalidatePath(`/garage/${id}`);
@@ -55,7 +54,7 @@ export async function updateKm(id: string, currentKm: number): Promise<ActionRes
 
 export async function deleteVehicle(id: string): Promise<ActionResult> {
   const user = await requireUser();
-  await ownVehicleOr404(id, user.id);
+  if (!(await ownedVehicle(id, user.id))) return fail("not_found");
   await db.vehicle.delete({ where: { id } });
   revalidatePath("/garage");
   return ok(undefined);

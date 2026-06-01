@@ -11,4 +11,12 @@ describe("money", () => {
     expect(centsToBRL(38000)).toMatch(/R\$\s?380,00/);
     expect(centsToBRL(129090)).toMatch(/R\$\s?1\.290,90/);
   });
+  it("returns 0 for empty or garbage input", () => {
+    expect(realToCents("")).toBe(0);
+    expect(realToCents("abc")).toBe(0);
+  });
+  it("never returns negative or non-finite cents", () => {
+    expect(realToCents("-50")).toBe(0);
+    expect(realToCents("Infinity")).toBe(0);
+  });
 });
