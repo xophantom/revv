@@ -118,6 +118,7 @@ model MaintenanceRecord {
   date        DateTime
   km          Int
   category    MaintenanceCategory
+  specRuleId  String?             // optional: ties this record to a spec rule (e.g. "airFilter") for precise alerts
   title       String
   workshop    String?
   costCents   Int                 @default(0)
