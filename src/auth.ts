@@ -1,10 +1,12 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
+import { authConfig } from "@/auth.config";
 
+// Full Node-runtime config: adds the db-backed Credentials provider on top of
+// the edge-safe base. Used by the route handler, server actions, and RSCs.
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  ...authConfig,
   providers: [
     Credentials({
       name: "Dev",
@@ -21,14 +23,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) token.id = (user as { id: string }).id;
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user) session.user.id = token.id as string;
-      return session;
-    },
-  },
 });
