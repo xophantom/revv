@@ -60,6 +60,10 @@ function rulesFromSpec(spec: VehicleSpecData): SpecRule[] {
   return r;
 }
 
+export function specRuleOptions(spec: VehicleSpecData): { id: string; label: string }[] {
+  return rulesFromSpec(spec).map((r) => ({ id: r.id, label: r.label }));
+}
+
 // Year+month granularity (ignores day-of-month): biased toward warning slightly early — safe for a reminder.
 function monthsBetween(a: Date, b: Date): number {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
