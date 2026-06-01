@@ -85,6 +85,7 @@ CustomAlert     // alertas avulsos (parte "manual" do híbrido)
 Função pura `computeAlerts(vehicle, spec, maintenances, customAlerts)`:
 
 1. Para cada intervalo definido na ficha (óleo, rodízio de pneus, fluido de freio, velas, etc.):
+   - Cada item da ficha tem uma `MaintenanceCategory` fixa associada (mapa explícito no engine: engineOil/oilFilter → OIL, tires → TIRES, brakeFluid/coolant/transmissionOil → FLUIDS, sparkPlugs → ELECTRICAL, airFilter/fuelFilter/cabinFilter → FILTERS, timingBelt → REVISION). O rodízio de pneus usa a última manutenção TIRES; a troca de óleo a última OIL; e assim por diante.
    - Acha a última manutenção da categoria correspondente.
    - Calcula `kmRestante = intervalKm - (currentKm - recordKm)` e `mesesRestante` a partir das datas/intervalos.
 2. Atribui status: `ok` / `soon` (dentro de um threshold configurável) / `overdue`.
