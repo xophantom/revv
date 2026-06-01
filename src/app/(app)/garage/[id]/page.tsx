@@ -83,6 +83,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
           <div className="mono mt-2 flex flex-wrap gap-2 text-xs text-muted">
             <span className="rounded bg-white px-2 py-1 font-bold text-bg">{v.plate ?? "—"}</span>
             <span className="rounded border border-border px-2 py-1">{v.year ?? "—"}{v.engine ? " · " + v.engine : ""}</span>
+            <a href={`/api/vehicles/${v.id}/pdf`} className="rounded border border-accent px-2 py-1 text-accent transition hover:bg-accent hover:text-bg">Exportar PDF</a>
           </div>
           <KmEditor id={v.id} currentKm={v.currentKm} />
           <AlertChips {...alertInput} />
