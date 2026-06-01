@@ -2,8 +2,11 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { vehicleSpecSchema, emptySpec } from "@/domain/spec-schema";
+import { specRuleOptions, type AlertInput } from "@/domain/alerts";
 import { SpecSheet } from "@/components/spec/SpecSheet";
 import { KmEditor } from "@/components/vehicles/KmEditor";
+import { AlertChips } from "@/components/alerts/AlertChips";
+import { MaintenanceList } from "@/components/maintenance/MaintenanceList";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default async function VehiclePage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,10 +14,34 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   const user = await requireUser();
   const v = await db.vehicle.findUnique({
     where: { id },
-    include: { spec: true, maintenances: { orderBy: { date: "desc" } }, upgrades: { orderBy: { date: "desc" } }, customAlerts: true, attachments: { where: { kind: "image" }, orderBy: { createdAt: "desc" } } },
+    include: {
+      spec: true,
+      maintenances: { include: { attachments: true }, orderBy: { date: "desc" } },
+      upgrades: { orderBy: { date: "desc" } },
+      customAlerts: true,
+      attachments: { where: { kind: "image" }, orderBy: { createdAt: "desc" } },
+    },
   });
   if (!v || v.userId !== user.id) notFound();
   const spec = v.spec ? vehicleSpecSchema.parse(v.spec.data) : emptySpec();
+  const alertInput: AlertInput = {
+    currentKm: v.currentKm,
+    today: new Date(),
+    spec,
+    maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleId: m.specRuleId })),
+    customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done })),
+  };
+  const maintRecords = v.maintenances.map((m) => ({
+    id: m.id,
+    date: m.date.toISOString(),
+    km: m.km,
+    category: m.category,
+    title: m.title,
+    workshop: m.workshop,
+    costCents: m.costCents,
+    notes: m.notes,
+    attachments: m.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
+  }));
   return (
     <div>
       <section className="mb-6 grid gap-6 md:grid-cols-[300px_1fr]">
@@ -26,7 +53,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
             <span className="rounded border border-border px-2 py-1">{v.year ?? "—"}{v.engine ? " · " + v.engine : ""}</span>
           </div>
           <KmEditor id={v.id} currentKm={v.currentKm} />
-          {/* AlertChips wired in Phase 2 (Task 2.3) */}
+          <AlertChips {...alertInput} />
         </div>
       </section>
       <section className="mb-6"><SpecSheet vehicleId={v.id} spec={spec} /></section>
@@ -37,7 +64,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
           <TabsTrigger value="gallery">Galeria <span className="mono ml-1 text-[10px] text-accent">{v.attachments.length}</span></TabsTrigger>
           <TabsTrigger value="finance">Financeiro</TabsTrigger>
         </TabsList>
-        <TabsContent value="maint"><p className="mono text-sm text-muted">// manutenções — em breve (Fase 2)</p></TabsContent>
+        <TabsContent value="maint"><MaintenanceList vehicleId={v.id} specRules={specRuleOptions(spec)} records={maintRecords} /></TabsContent>
         <TabsContent value="upg"><p className="mono text-sm text-muted">// upgrades — em breve (Fase 2)</p></TabsContent>
         <TabsContent value="gallery"><p className="mono text-sm text-muted">// galeria — em breve (Fase 2)</p></TabsContent>
         <TabsContent value="finance"><p className="mono text-sm text-muted">// financeiro — em breve (Fase 3)</p></TabsContent>
