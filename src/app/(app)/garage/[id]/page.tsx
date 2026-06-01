@@ -9,6 +9,8 @@ import { AlertChips } from "@/components/alerts/AlertChips";
 import { MaintenanceList } from "@/components/maintenance/MaintenanceList";
 import { UpgradeTimeline } from "@/components/upgrades/UpgradeTimeline";
 import { Gallery } from "@/components/gallery/Gallery";
+import { VehicleFinance } from "@/components/dashboard/VehicleFinance";
+import { summarizeVehicle, type FinanceInput } from "@/domain/finance";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default async function VehiclePage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,6 +56,15 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     notes: u.notes,
     attachments: u.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
   }));
+  const firstKm = v.maintenances.length ? Math.min(...v.maintenances.map((m) => m.km)) : v.currentKm;
+  const financeInput: FinanceInput = {
+    currentKm: v.currentKm,
+    firstKm,
+    maintenances: v.maintenances.map((m) => ({ date: m.date, costCents: m.costCents })),
+    upgrades: v.upgrades.map((u) => ({ date: u.date, costCents: u.costCents })),
+  };
+  const summary = summarizeVehicle(financeInput);
+  const monthlyAvgCents = Math.round(summary.totalCents / Math.max(1, summary.byMonth.length));
   return (
     <div>
       <section className="mb-6 grid gap-6 md:grid-cols-[300px_1fr]">
@@ -79,7 +90,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         <TabsContent value="maint"><MaintenanceList vehicleId={v.id} specRules={specRuleOptions(spec)} records={maintRecords} /></TabsContent>
         <TabsContent value="upg"><UpgradeTimeline vehicleId={v.id} upgrades={upgradeRecords} /></TabsContent>
         <TabsContent value="gallery"><Gallery images={v.attachments.map((a) => ({ url: a.url, caption: a.caption }))} /></TabsContent>
-        <TabsContent value="finance"><p className="mono text-sm text-muted">// financeiro — em breve (Fase 3)</p></TabsContent>
+        <TabsContent value="finance"><VehicleFinance summary={summary} monthlyAvgCents={monthlyAvgCents} /></TabsContent>
       </Tabs>
     </div>
   );
