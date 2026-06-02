@@ -14,7 +14,9 @@ export function VehicleForm() {
   const [open, setOpen] = useState(false);
   const [photo, setPhoto] = useState<{ url: string; key: string } | null>(null);
   async function action(formData: FormData) {
-    const raw = Object.fromEntries(formData.entries());
+    // Drop blank fields so optional numbers (year) don't coerce "" -> 0 and
+    // optional strings (plate, ...) store undefined instead of "".
+    const raw = Object.fromEntries([...formData.entries()].filter(([, v]) => v !== ""));
     const res = await createVehicle({ ...raw, photoUrl: photo?.url, photoKey: photo?.key });
     if (!res.ok) { toast.error(res.error); return; }
     toast.success("Veículo criado");
