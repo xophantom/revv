@@ -15,7 +15,7 @@ export function AttachmentUploader({ onUploaded, label = "Anexar fotos/PDF" }: {
       for (const file of files) {
         // Browser → Vercel Blob directly (bypasses the serverless body limit).
         // The token route adds a random suffix, so same-named files don't collide.
-        const blob = await upload(file.name, file, { access: "public", handleUploadUrl: "/api/blob/upload" });
+        const blob = await upload(file.name, file, { access: "private", handleUploadUrl: "/api/blob/upload" });
         uploaded.push({ url: blob.url, key: blob.pathname, fileName: file.name, mime: file.type, size: file.size });
       }
       onUploaded(uploaded);

@@ -46,7 +46,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     workshop: m.workshop,
     costCents: m.costCents,
     notes: m.notes,
-    attachments: m.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
+    attachments: m.attachments.map((a) => ({ id: a.id, kind: a.kind, url: `/api/attachments/${a.id}/raw`, fileName: a.fileName, caption: a.caption })),
   }));
   const upgradeRecords = v.upgrades.map((u) => ({
     id: u.id,
@@ -56,7 +56,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     costCents: u.costCents,
     supplier: u.supplier,
     notes: u.notes,
-    attachments: u.attachments.map((a) => ({ id: a.id, kind: a.kind, url: a.url, fileName: a.fileName, caption: a.caption })),
+    attachments: u.attachments.map((a) => ({ id: a.id, kind: a.kind, url: `/api/attachments/${a.id}/raw`, fileName: a.fileName, caption: a.caption })),
   }));
   const customAlertRecords = v.customAlerts.map((c) => ({
     id: c.id,
@@ -77,7 +77,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   return (
     <div>
       <section className="mb-6 grid gap-6 md:grid-cols-[300px_1fr]">
-        <div className="h-48 rounded-xl border border-border bg-surface2 bg-cover bg-center" style={v.photoUrl ? { backgroundImage: `linear-gradient(0deg,rgba(0,0,0,.5),transparent),url(${v.photoUrl})` } : undefined} />
+        <div className="h-48 rounded-xl border border-border bg-surface2 bg-cover bg-center" style={v.photoUrl ? { backgroundImage: `linear-gradient(0deg,rgba(0,0,0,.5),transparent),url(/api/vehicles/${v.id}/photo)` } : undefined} />
         <div>
           <h1 className="text-4xl font-bold">{v.name}</h1>
           <div className="mono mt-2 flex flex-wrap gap-2 text-xs text-muted">
@@ -106,7 +106,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
         </TabsList>
         <TabsContent value="maint"><MaintenanceList vehicleId={v.id} specRules={specRuleOptions(spec)} records={maintRecords} /></TabsContent>
         <TabsContent value="upg"><UpgradeTimeline vehicleId={v.id} upgrades={upgradeRecords} /></TabsContent>
-        <TabsContent value="gallery"><Gallery images={v.attachments.map((a) => ({ url: a.url, caption: a.caption }))} /></TabsContent>
+        <TabsContent value="gallery"><Gallery images={v.attachments.map((a) => ({ url: `/api/attachments/${a.id}/raw`, caption: a.caption }))} /></TabsContent>
         <TabsContent value="finance"><VehicleFinance summary={summary} monthlyAvgCents={monthlyAvgCents} /></TabsContent>
       </Tabs>
     </div>
