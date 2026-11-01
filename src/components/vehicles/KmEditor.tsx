@@ -35,7 +35,7 @@ export function KmEditor({ id, currentKm }: { id: string; currentKm: number }) {
       ) : (
         <span>
           ODÔMETRO <b className="text-fg">{currentKm.toLocaleString("pt-BR")}</b> km ·{" "}
-          <button type="button" onClick={() => setEditing(true)} className="cursor-pointer text-accent transition hover:opacity-80">atualizar</button>
+          <button type="button" onClick={() => { setValue(String(currentKm)); setEditing(true); }} className="cursor-pointer text-accent transition hover:opacity-80">atualizar</button>
         </span>
       )}
     </div>

@@ -18,18 +18,25 @@ const input = z.object({
   attachments: z.array(attachment).default([]),
 });
 
-export async function createMaintenance(vehicleId: string, raw: unknown): Promise<ActionResult<{ id: string }>> {
+export async function createMaintenance(vehicleId: string, raw: unknown): Promise<ActionResult<{ id: string; odometerUpdatedTo: number | null }>> {
   const user = await requireUser();
   const v = await db.vehicle.findUnique({ where: { id: vehicleId } });
   if (!v || v.userId !== user.id) return fail("not_found");
   const parsed = input.safeParse(raw);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const { attachments, ...rest } = parsed.data;
-  const rec = await db.maintenanceRecord.create({
-    data: { ...rest, vehicleId, attachments: { create: attachments.map((a) => ({ ...a, vehicleId, kind: a.mime.includes("pdf") ? ("pdf" as const) : ("image" as const) })) } },
-  });
+  // Logging a service past the odometer moves the odometer forward (never back).
+  // The `lt` guard makes the bump atomic against concurrent km updates.
+  const [rec, bumped] = await db.$transaction([
+    db.maintenanceRecord.create({
+      data: { ...rest, vehicleId, attachments: { create: attachments.map((a) => ({ ...a, vehicleId, kind: a.mime.includes("pdf") ? ("pdf" as const) : ("image" as const) })) } },
+    }),
+    db.vehicle.updateMany({ where: { id: vehicleId, currentKm: { lt: rest.km } }, data: { currentKm: rest.km } }),
+  ]);
   revalidatePath(`/garage/${vehicleId}`);
-  return ok({ id: rec.id });
+  revalidatePath("/garage");
+  revalidatePath("/dashboard");
+  return ok({ id: rec.id, odometerUpdatedTo: bumped.count ? rest.km : null });
 }
 
 export async function deleteMaintenance(id: string): Promise<ActionResult> {

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createUpgrade } from "@/actions/upgrades";
-import { AttachmentUploader, type Uploaded } from "@/components/common/AttachmentUploader";
+import { AttachmentUploader, UploadedFiles, type Uploaded } from "@/components/common/AttachmentUploader";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { UPGRADE_CATEGORIES, UPGRADE_LABELS } from "@/lib/categories";
 import { realToCents } from "@/lib/money";
+import { todayInputValue } from "@/lib/dates";
 
 const selectClass = "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent";
 
@@ -18,10 +19,21 @@ export function UpgradeForm({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [attachments, setAttachments] = useState<Uploaded[]>([]);
-  const today = new Date().toISOString().slice(0, 10);
+  const [uploading, setUploading] = useState(false);
+  const [pending, setPending] = useState(false);
+  const today = todayInputValue();
+
+  function reset() { setAttachments([]); setUploading(false); }
+  // Esc/outside click can't close the dialog mid-save; the save's completion closes it.
+  function onOpenChange(next: boolean) {
+    if (!next && pending) return;
+    setOpen(next);
+    if (!next) reset();
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending || uploading) return;
     const fd = new FormData(e.currentTarget);
     const cost = String(fd.get("cost") ?? "");
     const payload = {
@@ -33,16 +45,21 @@ export function UpgradeForm({ vehicleId }: { vehicleId: string }) {
       notes: String(fd.get("notes") ?? ""),
       attachments,
     };
-    const res = await createUpgrade(vehicleId, payload);
-    if (!res.ok) { toast.error(res.error); return; }
-    toast.success("Upgrade registrado");
-    setOpen(false);
-    setAttachments([]);
-    router.refresh();
+    setPending(true);
+    try {
+      const res = await createUpgrade(vehicleId, payload);
+      if (!res.ok) { toast.error(res.error); return; }
+      toast.success("Upgrade registrado");
+      setOpen(false);
+      reset();
+      router.refresh();
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild><Button className="bg-accent text-bg">+ Upgrade</Button></DialogTrigger>
       <DialogContent className="glass">
         <DialogHeader><DialogTitle>Novo upgrade</DialogTitle></DialogHeader>
@@ -58,14 +75,18 @@ export function UpgradeForm({ vehicleId }: { vehicleId: string }) {
           <div><Label>Nome</Label><Input name="name" required /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Fornecedor</Label><Input name="supplier" /></div>
-            <div><Label>Custo</Label><Input name="cost" type="text" placeholder="0,00" /></div>
+            <div><Label>Custo</Label><Input name="cost" type="text" inputMode="decimal" placeholder="0,00" /></div>
           </div>
           <div><Label>Notas</Label><Textarea name="notes" /></div>
           <div>
-            <AttachmentUploader label="Fotos antes/depois, peça, instalada" onUploaded={(f) => setAttachments((prev) => [...prev, ...f])} />
-            {attachments.length > 0 && <p className="mono mt-1 text-xs text-muted">{attachments.length} arquivo(s) anexado(s)</p>}
+            <AttachmentUploader label="Fotos antes/depois, peça, instalada" disabled={pending} onBusyChange={setUploading}
+              onUploaded={(f) => setAttachments((prev) => [...prev, ...f])} />
+            <UploadedFiles files={attachments} disabled={pending}
+              onRemove={(f) => setAttachments((prev) => prev.filter((a) => a.key !== f.key))} />
           </div>
-          <Button type="submit" className="bg-accent text-bg">Salvar</Button>
+          <Button type="submit" disabled={pending || uploading} className="bg-accent text-bg">
+            {pending ? "Salvando..." : uploading ? "Aguardando upload..." : "Salvar"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

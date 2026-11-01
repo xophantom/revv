@@ -1,9 +1,9 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { format } from "date-fns";
 import type { Vehicle, VehicleSpec, MaintenanceRecord, Upgrade } from "@prisma/client";
 import { vehicleSpecSchema, emptySpec, type VehicleSpecData } from "@/domain/spec-schema";
 import { MAINTENANCE_LABELS, UPGRADE_LABELS } from "@/lib/categories";
 import { centsToBRL } from "@/lib/money";
+import { formatDateOnly } from "@/lib/dates";
 
 const ACCENT = "#ff6a00";
 const DARK = "#1a1a1a";
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   footerTotal: { fontFamily: "Helvetica-Bold", color: ACCENT, fontSize: 11 },
 });
 
-const fmtDate = (d: Date) => format(new Date(d), "dd/MM/yyyy");
+const fmtDate = (d: Date) => formatDateOnly(d, "dd/MM/yyyy");
 
 // Column widths per table (sum to 100%). Keeps headers and rows aligned.
 const MAINT_COLS = ["13%", "12%", "16%", "27%", "20%", "12%"];

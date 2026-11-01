@@ -13,6 +13,7 @@ import { UpgradeTimeline } from "@/components/upgrades/UpgradeTimeline";
 import { Gallery } from "@/components/gallery/Gallery";
 import { VehicleFinance } from "@/components/dashboard/VehicleFinance";
 import { summarizeVehicle, type FinanceInput } from "@/domain/finance";
+import { todayDateOnly } from "@/lib/dates";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default async function VehiclePage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,9 +31,10 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   });
   if (!v || v.userId !== user.id) notFound();
   const spec = v.spec ? vehicleSpecSchema.parse(v.spec.data) : emptySpec();
+  const today = todayDateOnly();
   const alertInput: AlertInput = {
     currentKm: v.currentKm,
-    today: new Date(),
+    today,
     spec,
     maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleId: m.specRuleId })),
     customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done })),
@@ -69,11 +71,11 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
   const financeInput: FinanceInput = {
     currentKm: v.currentKm,
     firstKm,
+    today,
     maintenances: v.maintenances.map((m) => ({ date: m.date, costCents: m.costCents })),
     upgrades: v.upgrades.map((u) => ({ date: u.date, costCents: u.costCents })),
   };
   const summary = summarizeVehicle(financeInput);
-  const monthlyAvgCents = Math.round(summary.totalCents / Math.max(1, summary.byMonth.length));
   return (
     <div>
       <section className="mb-6 grid gap-6 md:grid-cols-[300px_1fr]">
@@ -104,10 +106,10 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
           <TabsTrigger value="gallery">Galeria <span className="mono ml-1 text-[10px] text-accent">{v.attachments.length}</span></TabsTrigger>
           <TabsTrigger value="finance">Financeiro</TabsTrigger>
         </TabsList>
-        <TabsContent value="maint"><MaintenanceList vehicleId={v.id} specRules={specRuleOptions(spec)} records={maintRecords} /></TabsContent>
+        <TabsContent value="maint"><MaintenanceList vehicleId={v.id} specRules={specRuleOptions(spec)} records={maintRecords} currentKm={v.currentKm} /></TabsContent>
         <TabsContent value="upg"><UpgradeTimeline vehicleId={v.id} upgrades={upgradeRecords} /></TabsContent>
         <TabsContent value="gallery"><Gallery images={v.attachments.map((a) => ({ url: `/api/attachments/${a.id}/raw`, caption: a.caption }))} /></TabsContent>
-        <TabsContent value="finance"><VehicleFinance summary={summary} monthlyAvgCents={monthlyAvgCents} /></TabsContent>
+        <TabsContent value="finance"><VehicleFinance summary={summary} /></TabsContent>
       </Tabs>
     </div>
   );

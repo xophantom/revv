@@ -1,18 +1,19 @@
 import type { MaintenanceCategory } from "@prisma/client";
 import type { VehicleSpecData } from "./spec-schema";
+import { addMonthsUTC, daysBetween } from "@/lib/dates";
 
 const KM_SOON = 1500;
-const MONTHS_SOON = 1;
+const DAYS_SOON = 30;
 
 export type AlertStatus = "overdue" | "unknown" | "soon" | "ok";
-export type AlertDriver = "km" | "months" | null;
+export type AlertDriver = "km" | "time" | null;
 
 export type Alert = {
   id: string;
   label: string;
   status: AlertStatus;
   remainingKm: number | null;
-  remainingMonths: number | null;
+  remainingDays: number | null; // calendar days until due (negative = overdue)
   driver: AlertDriver; // which dimension set the status (so the UI shows the right number)
   source: "spec" | "custom";
 };
@@ -64,11 +65,6 @@ export function specRuleOptions(spec: VehicleSpecData): { id: string; label: str
   return rulesFromSpec(spec).map((r) => ({ id: r.id, label: r.label }));
 }
 
-// Year+month granularity (ignores day-of-month): biased toward warning slightly early — safe for a reminder.
-function monthsBetween(a: Date, b: Date): number {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-}
-
 const RANK: Record<AlertStatus, number> = { overdue: 0, unknown: 1, soon: 2, ok: 3 };
 
 function classifyDim(remaining: number, soonThreshold: number): AlertStatus {
@@ -87,7 +83,7 @@ function lastServiceFor(rule: SpecRule, maint: MaintenanceLite[], uniqueCats: Se
   return [...pool].sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 }
 
-type Dim = { status: AlertStatus; dim: "km" | "months" };
+type Dim = { status: AlertStatus; dim: "km" | "time" };
 
 function combine(dims: Dim[]): { status: AlertStatus; driver: AlertDriver } {
   if (!dims.length) return { status: "unknown", driver: null };
@@ -96,11 +92,11 @@ function combine(dims: Dim[]): { status: AlertStatus; driver: AlertDriver } {
   return { status: worst.status, driver: worst.dim };
 }
 
-// Smaller = more urgent. Normalizes months to a km-comparable scale so the two dimensions sort together.
+// Smaller = more urgent. Normalizes days to a km-comparable scale so the two dimensions sort together.
 function urgencyKey(a: Alert): number {
   const vals: number[] = [];
   if (a.remainingKm != null && Number.isFinite(a.remainingKm)) vals.push(a.remainingKm);
-  if (a.remainingMonths != null && Number.isFinite(a.remainingMonths)) vals.push(a.remainingMonths * KM_SOON);
+  if (a.remainingDays != null && Number.isFinite(a.remainingDays)) vals.push(a.remainingDays * (KM_SOON / DAYS_SOON));
   return vals.length ? Math.min(...vals) : Number.POSITIVE_INFINITY;
 }
 
@@ -115,10 +111,10 @@ export function computeAlerts(input: AlertInput): Alert[] {
   for (const rule of rules) {
     const last = lastServiceFor(rule, input.maintenances, uniqueCats);
     let remainingKm: number | null = null;
-    let remainingMonths: number | null = null;
+    let remainingDays: number | null = null;
     const dims: Dim[] = [];
 
-    if (rule.intervalKm != null) {
+    if (rule.intervalKm) {
       const baseKm = last?.km ?? rule.baselineKm;
       if (baseKm != null) {
         remainingKm = rule.intervalKm - (input.currentKm - baseKm);
@@ -127,28 +123,28 @@ export function computeAlerts(input: AlertInput): Alert[] {
         dims.push({ status: "unknown", dim: "km" }); // no service logged and no explicit baseline
       }
     }
-    if (rule.intervalMonths != null) {
+    if (rule.intervalMonths) {
       if (last?.date) {
-        remainingMonths = rule.intervalMonths - monthsBetween(last.date, input.today);
-        dims.push({ status: classifyDim(remainingMonths, MONTHS_SOON), dim: "months" });
+        remainingDays = daysBetween(input.today, addMonthsUTC(last.date, rule.intervalMonths));
+        dims.push({ status: classifyDim(remainingDays, DAYS_SOON), dim: "time" });
       } else {
-        dims.push({ status: "unknown", dim: "months" });
+        dims.push({ status: "unknown", dim: "time" });
       }
     }
 
     const { status, driver } = combine(dims);
-    alerts.push({ id: rule.id, label: rule.label, status, remainingKm, remainingMonths, driver, source: "spec" });
+    alerts.push({ id: rule.id, label: rule.label, status, remainingKm, remainingDays, driver, source: "spec" });
   }
 
   for (const c of input.customAlerts) {
     if (c.done) continue;
     const remainingKm = c.dueKm != null ? c.dueKm - input.currentKm : null;
-    const remainingMonths = c.dueDate != null ? monthsBetween(input.today, c.dueDate) : null;
+    const remainingDays = c.dueDate != null ? daysBetween(input.today, c.dueDate) : null;
     const dims: Dim[] = [];
     if (remainingKm != null) dims.push({ status: classifyDim(remainingKm, KM_SOON), dim: "km" });
-    if (remainingMonths != null) dims.push({ status: classifyDim(remainingMonths, MONTHS_SOON), dim: "months" });
+    if (remainingDays != null) dims.push({ status: classifyDim(remainingDays, DAYS_SOON), dim: "time" });
     const { status, driver } = combine(dims);
-    alerts.push({ id: c.id, label: c.label, status, remainingKm, remainingMonths, driver, source: "custom" });
+    alerts.push({ id: c.id, label: c.label, status, remainingKm, remainingDays, driver, source: "custom" });
   }
 
   // primary: status severity; secondary: most urgent first within the same status.

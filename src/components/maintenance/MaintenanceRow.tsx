@@ -2,13 +2,12 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import type { MaintenanceCategory } from "@prisma/client";
 import { deleteMaintenance } from "@/actions/maintenance";
 import { AttachmentList } from "@/components/common/AttachmentList";
 import { Money } from "@/components/common/Money";
 import { MAINTENANCE_LABELS } from "@/lib/categories";
+import { formatDateOnly } from "@/lib/dates";
 
 type Att = { id: string; kind: "image" | "pdf"; url: string; fileName: string; caption?: string | null };
 export type MaintRecord = {
@@ -26,10 +25,9 @@ export type MaintRecord = {
 export function MaintenanceRow({ record }: { record: MaintRecord }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const d = new Date(record.date);
-  const day = format(d, "dd", { locale: ptBR });
-  const month = format(d, "MMM", { locale: ptBR }).toUpperCase();
-  const year = format(d, "yyyy", { locale: ptBR });
+  const day = formatDateOnly(record.date, "dd");
+  const month = formatDateOnly(record.date, "MMM").toUpperCase();
+  const year = formatDateOnly(record.date, "yyyy");
 
   function onDelete() {
     if (!window.confirm("Excluir esta manutenção?")) return;

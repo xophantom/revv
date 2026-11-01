@@ -4,7 +4,7 @@ import { MaintenanceForm } from "./MaintenanceForm";
 import { Filters } from "./Filters";
 import { MaintenanceRow, type MaintRecord } from "./MaintenanceRow";
 
-export function MaintenanceList({ vehicleId, specRules, records }: { vehicleId: string; specRules: { id: string; label: string }[]; records: MaintRecord[] }) {
+export function MaintenanceList({ vehicleId, specRules, records, currentKm }: { vehicleId: string; specRules: { id: string; label: string }[]; records: MaintRecord[]; currentKm: number }) {
   const { maintFilter } = useUi();
   const filtered = records.filter((r) => {
     if (maintFilter.category && r.category !== maintFilter.category) return false;
@@ -16,11 +16,11 @@ export function MaintenanceList({ vehicleId, specRules, records }: { vehicleId: 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <MaintenanceForm vehicleId={vehicleId} specRules={specRules} />
+        <MaintenanceForm vehicleId={vehicleId} specRules={specRules} currentKm={currentKm} />
         <Filters />
       </div>
       {filtered.length === 0 ? (
-        <p className="mono text-sm text-muted">// nenhuma manutenção registrada</p>
+        <p className="mono text-sm text-muted">{"// nenhuma manutenção registrada"}</p>
       ) : (
         <div className="grid gap-2">
           {filtered.map((r) => <MaintenanceRow key={r.id} record={r} />)}

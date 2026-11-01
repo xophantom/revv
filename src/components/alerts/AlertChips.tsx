@@ -5,12 +5,21 @@ const STYLE: Record<string, string> = {
   soon: "bg-accent/10 border-accent/40 text-accent",
   unknown: "border-border text-muted",
 };
+// Under ~2 months shows days; beyond that, rounded months.
+function timeSpan(days: number): string {
+  const n = Math.abs(days);
+  if (n < 60) return n === 1 ? "1 dia" : `${n} dias`;
+  const months = Math.round(n / 30.44);
+  return months === 1 ? "1 mês" : `${months} meses`;
+}
 function detail(a: ReturnType<typeof computeAlerts>[number]): string {
   if (a.status === "unknown") return "sem histórico";
   if (a.driver === "km" && a.remainingKm != null)
     return `${a.remainingKm < 0 ? "há" : "em"} ${Math.abs(a.remainingKm).toLocaleString("pt-BR")} km`;
-  if (a.driver === "months" && a.remainingMonths != null)
-    return `${a.remainingMonths < 0 ? "há" : "em"} ${Math.abs(a.remainingMonths)} m`;
+  if (a.driver === "time" && a.remainingDays != null) {
+    if (a.remainingDays === 0) return "vence hoje";
+    return `${a.remainingDays < 0 ? "há" : "em"} ${timeSpan(a.remainingDays)}`;
+  }
   return "";
 }
 export function AlertChips(input: AlertInput) {

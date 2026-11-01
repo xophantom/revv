@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 export function CustomAlertForm({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const fd = new FormData(e.currentTarget);
     const dueKm = String(fd.get("dueKm") ?? "");
     const dueDate = String(fd.get("dueDate") ?? "");
@@ -22,15 +24,20 @@ export function CustomAlertForm({ vehicleId }: { vehicleId: string }) {
       dueKm: dueKm ? Number(dueKm) : undefined,
       dueDate: dueDate || undefined,
     };
-    const res = await createCustomAlert(vehicleId, payload);
-    if (!res.ok) { toast.error(res.error); return; }
-    toast.success("Alerta criado");
-    setOpen(false);
-    router.refresh();
+    setPending(true);
+    try {
+      const res = await createCustomAlert(vehicleId, payload);
+      if (!res.ok) { toast.error(res.error); return; }
+      toast.success("Alerta criado");
+      setOpen(false);
+      router.refresh();
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(next) => (next || !pending) && setOpen(next)}>
       <DialogTrigger asChild>
         <Button className="border border-border text-muted">+ alerta</Button>
       </DialogTrigger>
@@ -39,11 +46,11 @@ export function CustomAlertForm({ vehicleId }: { vehicleId: string }) {
         <form onSubmit={onSubmit} className="grid gap-3">
           <div><Label>Descrição</Label><Input name="label" required /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Km (opcional)</Label><Input name="dueKm" type="number" /></div>
+            <div><Label>Km (opcional)</Label><Input name="dueKm" type="number" inputMode="numeric" /></div>
             <div><Label>Data (opcional)</Label><Input name="dueDate" type="date" /></div>
           </div>
           <p className="mono text-[11px] text-muted">Informe pelo menos km ou data.</p>
-          <Button type="submit" className="bg-accent text-bg">Salvar</Button>
+          <Button type="submit" disabled={pending} className="bg-accent text-bg">{pending ? "Salvando..." : "Salvar"}</Button>
         </form>
       </DialogContent>
     </Dialog>

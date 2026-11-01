@@ -4,6 +4,7 @@ import { summarizeVehicle, type FinanceInput } from "@/domain/finance";
 const input: FinanceInput = {
   currentKm: 87430,
   firstKm: 80000,
+  today: new Date("2026-05-31"),
   maintenances: [
     { date: new Date("2026-04-12"), costCents: 38000 },
     { date: new Date("2026-01-28"), costCents: 54000 },
@@ -29,5 +30,19 @@ describe("summarizeVehicle", () => {
   });
   it("finds the largest single expense", () => {
     expect(summarizeVehicle(input).maxExpenseCents).toBe(250000);
+  });
+  it("averages over every month since the first expense, including months without spend", () => {
+    // Jan..May 2026 = 5 months, even though only 3 of them had expenses
+    expect(summarizeVehicle(input).monthlyAvgCents).toBe(Math.round(342000 / 5));
+    const sparse = summarizeVehicle({
+      ...input,
+      today: new Date("2026-11-15"),
+      upgrades: [],
+      maintenances: [{ date: new Date("2026-01-10"), costCents: 60000 }, { date: new Date("2026-11-10"), costCents: 60000 }],
+    });
+    expect(sparse.monthlyAvgCents).toBe(Math.round(120000 / 11));
+  });
+  it("returns a zero average with no expenses", () => {
+    expect(summarizeVehicle({ ...input, maintenances: [], upgrades: [] }).monthlyAvgCents).toBe(0);
   });
 });

@@ -5,6 +5,7 @@ import { vehicleSpecSchema, emptySpec } from "@/domain/spec-schema";
 import { computeAlerts, type AlertInput } from "@/domain/alerts";
 import { summarizeVehicle, type FinanceInput } from "@/domain/finance";
 import { centsToBRL } from "@/lib/money";
+import { todayDateOnly } from "@/lib/dates";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { SpendOverTime } from "@/components/dashboard/SpendOverTime";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
@@ -35,7 +36,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const today = new Date();
+  const today = todayDateOnly();
 
   // Per-vehicle finance + a single global FinanceInput (concatenate everything, sum km spans).
   const allMaintenances: { date: Date; costCents: number }[] = [];
@@ -48,6 +49,7 @@ export default async function DashboardPage() {
     const input: FinanceInput = {
       currentKm: v.currentKm,
       firstKm,
+      today,
       maintenances: v.maintenances.map((m) => ({ date: m.date, costCents: m.costCents })),
       upgrades: v.upgrades.map((u) => ({ date: u.date, costCents: u.costCents })),
     };
@@ -61,10 +63,10 @@ export default async function DashboardPage() {
   const global = summarizeVehicle({
     currentKm: currentKmSum,
     firstKm: firstKmSum,
+    today,
     maintenances: allMaintenances,
     upgrades: allUpgrades,
   });
-  const globalMonthlyAvg = Math.round(global.totalCents / Math.max(1, global.byMonth.length));
 
   // Per-vehicle spend list, sorted desc by total.
   const spendList = [...perVehicle].sort((a, b) => b.summary.totalCents - a.summary.totalCents);
@@ -93,7 +95,7 @@ export default async function DashboardPage() {
 
       <KpiCards
         totalCents={global.totalCents}
-        monthlyAvgCents={globalMonthlyAvg}
+        monthlyAvgCents={global.monthlyAvgCents}
         costPerKmCents={global.costPerKmCents}
         maxExpenseCents={global.maxExpenseCents}
       />

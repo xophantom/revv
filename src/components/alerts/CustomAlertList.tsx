@@ -2,9 +2,8 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { toggleCustomAlertDone, deleteCustomAlert } from "@/actions/alerts";
+import { formatDateOnly } from "@/lib/dates";
 
 export type CustomAlertRecord = {
   id: string;
@@ -38,7 +37,7 @@ function AlertItem({ alert }: { alert: CustomAlertRecord }) {
 
   const hints: string[] = [];
   if (alert.dueKm != null) hints.push(`${alert.dueKm.toLocaleString("pt-BR")} km`);
-  if (alert.dueDate) hints.push(format(new Date(alert.dueDate), "dd/MM/yyyy", { locale: ptBR }));
+  if (alert.dueDate) hints.push(formatDateOnly(alert.dueDate, "dd/MM/yyyy"));
 
   return (
     <div className="flex items-center gap-3 rounded-[10px] border border-border bg-surface p-3">

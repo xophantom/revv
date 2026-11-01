@@ -2,14 +2,13 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import type { UpgradeCategory } from "@prisma/client";
 import { deleteUpgrade } from "@/actions/upgrades";
 import { AnimatedCard } from "@/components/common/AnimatedCard";
 import { Money } from "@/components/common/Money";
 import { UpgradeForm } from "./UpgradeForm";
 import { UPGRADE_LABELS } from "@/lib/categories";
+import { formatDateOnly } from "@/lib/dates";
 import { useUi } from "@/store/ui";
 
 type Att = { id: string; kind: "image" | "pdf"; url: string; fileName: string; caption?: string | null };
@@ -29,8 +28,7 @@ function UpgradeNode({ u, i }: { u: Serialized; i: number }) {
   const [pending, startTransition] = useTransition();
   const images = u.attachments.filter((a) => a.kind === "image");
   const lightboxImages = images.map((a) => ({ url: a.url, caption: a.caption }));
-  const d = new Date(u.date);
-  const dateLabel = format(d, "dd MMM yyyy", { locale: ptBR }).toUpperCase();
+  const dateLabel = formatDateOnly(u.date, "dd MMM yyyy").toUpperCase();
 
   function onDelete() {
     if (!window.confirm("Excluir este upgrade?")) return;
