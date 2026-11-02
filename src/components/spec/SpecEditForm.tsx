@@ -149,7 +149,7 @@ export function SpecEditForm({ vehicleId, initial }: { vehicleId: string; initia
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="rounded-xl border border-border bg-surface p-4">
-      <legend className="tabular-nums px-1 text-xs uppercase tracking-widest text-accent">{"// "}{title}</legend>
+      <legend className="px-1 text-xs font-semibold uppercase tracking-widest text-accent">{title}</legend>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">{children}</div>
     </fieldset>
   );

@@ -107,7 +107,7 @@ export function TelemetryGrid({ vehicleId, items, notes, form, register }: {
       </SectionHeading>
       {items.length === 0 && !notes ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-dashed border-border p-4">
-          <p className="tabular-nums text-xs text-muted">{"// ficha vazia: preencha os intervalos para acompanhar óleo, filtros, pneus e afins"}</p>
+          <p className="text-xs text-muted">Ficha vazia: preencha os intervalos para acompanhar óleo, filtros, pneus e afins</p>
           <Link href={editHref} className={buttonClass({ variant: "outline", size: "sm" })}>Preencher ficha</Link>
         </div>
       ) : (

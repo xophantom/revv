@@ -111,7 +111,7 @@ ${list}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0b" style="background:#0a0a0b;"><tr><td align="center" style="padding:40px 16px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#141416" style="max-width:520px;background:#141416;border:1px solid #27272a;border-radius:16px;"><tr><td style="padding:36px 32px;font-family:${FONT};color:#ffffff;">
 <div style="text-align:center;font-size:32px;font-weight:700;letter-spacing:-0.5px;">RE<span style="color:#ff6a00;">VV</span></div>
-<div style="margin:6px 0 28px;text-align:center;${DATA};font-size:12px;color:#959596;">// alertas da garagem</div>
+<div style="margin:6px 0 28px;text-align:center;${DATA};font-size:12px;color:#959596;">Alertas da garagem</div>
 <p style="margin:0 0 24px;text-align:center;font-size:15px;line-height:1.5;color:#ffffff;">${esc(summary)}</p>
 ${rows}
 <div style="margin:8px 0 0;text-align:center;"><a href="${esc(appLink)}" style="display:inline-block;padding:14px 28px;background:#ff6a00;border-radius:10px;font-size:14px;font-weight:700;color:#0a0a0b;text-decoration:none;">Abrir o Revv</a></div>

@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
         <p className="tabular-nums text-sm text-muted">
-          {"// garagem vazia — "}
+          {"Garagem vazia: "}
           <Link href="/garage" className="text-accent hover:underline">adicione um veículo</Link>
         </p>
       </div>
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
 
       <Panel title="Alertas" action={urgent.length > 0 && <span className="tabular-nums text-[11px] text-muted">{alertCounts(urgent)}</span>}>
         {urgent.length === 0 ? (
-          <p className="tabular-nums text-sm text-muted">{missing.length ? "// nada atrasado ou próximo" : "// tudo em dia"}</p>
+          <p className="text-sm text-muted">{missing.length ? "Nada atrasado ou próximo" : "Tudo em dia"}</p>
         ) : (
           <ul className="grid gap-1 md:grid-cols-2">
             {urgent.map((a) => (

@@ -20,11 +20,11 @@ export function Panel({ title, action, className, children }: {
   );
 }
 
-// Page section title in the "// FICHA DE TROCA" style.
+// Page section title ("FICHA DE TROCA").
 export function SectionHeading({ children, action, className }: { children: React.ReactNode; action?: React.ReactNode; className?: string }) {
   return (
     <div className={cn("mb-3 flex min-h-8 flex-wrap items-center justify-between gap-2", className)}>
-      <h2 className="tabular-nums text-xs uppercase tracking-widest text-accent">{"// "}{children}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-accent">{children}</h2>
       {action}
     </div>
   );

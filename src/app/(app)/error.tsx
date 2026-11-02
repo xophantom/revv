@@ -13,7 +13,7 @@ export default function AppError({ error, unstable_retry }: { error: Error & { d
 
   return (
     <div role="alert" className="mx-auto max-w-md py-16 text-center">
-      <p className="tabular-nums text-xs uppercase tracking-widest text-accent">{"// erro"}</p>
+      <p className="tabular-nums text-xs uppercase tracking-widest text-accent">Erro</p>
       <h1 className="mt-2 text-2xl font-bold">Algo deu errado</h1>
       <p className="mt-2 text-sm text-muted">Não conseguimos carregar esta página. Tente de novo; se continuar, volte daqui a pouco.</p>
       {error.digest && <p className="tabular-nums mt-3 text-[11px] text-muted">ref {error.digest}</p>}

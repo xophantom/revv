@@ -102,7 +102,7 @@ function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: 
 }
 
 export function CustomAlertList({ vehicleId, alerts }: { vehicleId: string; alerts: CustomAlertRecord[] }) {
-  if (!alerts.length) return <p className="tabular-nums text-xs text-muted">{"// nenhum alerta: use para IPVA, licenciamento, seguro ou o que não está na ficha"}</p>;
+  if (!alerts.length) return <p className="text-xs text-muted">Nenhum alerta. Use para IPVA, licenciamento, seguro ou o que não está na ficha</p>;
   return (
     <div className="grid gap-2">
       {alerts.map((a) => <AlertItem key={a.id} alert={a} vehicleId={vehicleId} />)}

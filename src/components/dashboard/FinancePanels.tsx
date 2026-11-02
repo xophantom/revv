@@ -5,7 +5,7 @@ import { CategoryBreakdown } from "./CategoryBreakdown";
 
 // KPIs + both charts for one summary; shared by the vehicle page and the dashboard.
 export function FinancePanels({ summary, period }: { summary: FinanceSummary; period: FinancePeriod }) {
-  const emptyLabel = period === "all" ? "// sem gastos registrados" : "// sem gastos no período";
+  const emptyLabel = period === "all" ? "Sem gastos registrados" : "Sem gastos no período";
   return (
     <>
       <KpiCards summary={summary} />

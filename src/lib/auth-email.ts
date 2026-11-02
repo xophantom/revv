@@ -26,7 +26,7 @@ Se você não pediu este acesso, ignore este e-mail.
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0b" style="background:#0a0a0b;"><tr><td align="center" style="padding:40px 16px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#141416" style="max-width:440px;background:#141416;border:1px solid #27272a;border-radius:16px;"><tr><td style="padding:36px 32px;font-family:${FONT};color:#ffffff;text-align:center;">
 <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px;">RE<span style="color:#ff6a00;">VV</span></div>
-<div style="margin:6px 0 28px;${DATA};font-size:12px;color:#959596;">// sua garagem, sob controle</div>
+<div style="margin:6px 0 28px;${DATA};font-size:12px;color:#959596;">Sua garagem, sob controle</div>
 <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#ffffff;">Use o botão abaixo para entrar com <strong>${e}</strong>.</p>
 <a href="${u}" style="display:inline-block;padding:14px 28px;background:#ff6a00;border-radius:10px;font-size:14px;font-weight:700;color:#0a0a0b;text-decoration:none;">Entrar no Revv</a>
 <p style="margin:28px 0 6px;font-size:12px;color:#959596;">Ou copie e cole este link no navegador:</p>

@@ -94,7 +94,7 @@ export function UpgradeTimeline({ vehicleId, upgrades }: { vehicleId: string; up
         <UpgradeForm vehicleId={vehicleId} trigger={<Button><Plus size={16} /> Upgrade</Button>} />
       </div>
       {upgrades.length === 0 ? (
-        <p className="tabular-nums text-sm text-muted">{"// nenhum upgrade registrado"}</p>
+        <p className="text-sm text-muted">Nenhum upgrade registrado</p>
       ) : (
         <div className="relative grid gap-4 before:absolute before:bottom-2 before:left-[10px] before:top-2 before:w-px before:bg-border">
           {upgrades.map((u, i) => <UpgradeNode key={u.id} u={u} i={i} vehicleId={vehicleId} />)}

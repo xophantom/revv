@@ -23,7 +23,7 @@ export default function Loading() {
             </div>
           ))}
         </div>
-        <p className="tabular-nums mt-6 text-xs text-muted">{"// carregando…"}</p>
+        <p className="mt-6 text-xs text-muted">Carregando…</p>
       </div>
     </div>
   );
