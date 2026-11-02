@@ -2,10 +2,10 @@ import type { NextAuthConfig } from "next-auth";
 
 // Edge-safe config: NO db / Prisma / Node-only imports. Used by middleware
 // (Edge runtime) to verify the JWT session, and spread into the full Node
-// config in auth.ts. Providers with db access live ONLY in auth.ts.
+// config in auth.ts. The db adapter and providers live ONLY in auth.ts.
 export const authConfig = {
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  pages: { signIn: "/login", verifyRequest: "/login/verify", error: "/login" },
   providers: [],
   callbacks: {
     jwt({ token, user }) {

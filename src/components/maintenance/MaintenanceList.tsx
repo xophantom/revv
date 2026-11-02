@@ -1,10 +1,11 @@
 "use client";
 import { useUi } from "@/store/ui";
-import { MaintenanceForm } from "./MaintenanceForm";
+import { Button } from "@/components/ui/button";
+import { MaintenanceForm, type MaintenanceFormProps } from "./MaintenanceForm";
 import { Filters } from "./Filters";
 import { MaintenanceRow, type MaintRecord } from "./MaintenanceRow";
 
-export function MaintenanceList({ vehicleId, specRules, records }: { vehicleId: string; specRules: { id: string; label: string }[]; records: MaintRecord[] }) {
+export function MaintenanceList({ records, ...form }: MaintenanceFormProps & { records: MaintRecord[] }) {
   const { maintFilter } = useUi();
   const filtered = records.filter((r) => {
     if (maintFilter.category && r.category !== maintFilter.category) return false;
@@ -16,14 +17,14 @@ export function MaintenanceList({ vehicleId, specRules, records }: { vehicleId: 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <MaintenanceForm vehicleId={vehicleId} specRules={specRules} />
+        <MaintenanceForm {...form} trigger={<Button className="bg-accent text-bg">+ Manutenção</Button>} />
         <Filters />
       </div>
       {filtered.length === 0 ? (
-        <p className="mono text-sm text-muted">// nenhuma manutenção registrada</p>
+        <p className="mono text-sm text-muted">{records.length ? "// nenhuma manutenção corresponde ao filtro" : "// nenhuma manutenção registrada"}</p>
       ) : (
         <div className="grid gap-2">
-          {filtered.map((r) => <MaintenanceRow key={r.id} record={r} />)}
+          {filtered.map((r) => <MaintenanceRow key={r.id} record={r} form={form} />)}
         </div>
       )}
     </div>

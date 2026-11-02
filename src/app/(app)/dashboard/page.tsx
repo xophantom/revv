@@ -5,6 +5,7 @@ import { vehicleSpecSchema, emptySpec } from "@/domain/spec-schema";
 import { computeAlerts, type AlertInput } from "@/domain/alerts";
 import { summarizeVehicle, type FinanceInput } from "@/domain/finance";
 import { centsToBRL } from "@/lib/money";
+import { todayDateOnly } from "@/lib/dates";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { SpendOverTime } from "@/components/dashboard/SpendOverTime";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
@@ -35,7 +36,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const today = new Date();
+  const today = todayDateOnly();
 
   // Per-vehicle finance + a single global FinanceInput (concatenate everything, sum km spans).
   const allMaintenances: { date: Date; costCents: number }[] = [];
@@ -48,6 +49,7 @@ export default async function DashboardPage() {
     const input: FinanceInput = {
       currentKm: v.currentKm,
       firstKm,
+      today,
       maintenances: v.maintenances.map((m) => ({ date: m.date, costCents: m.costCents })),
       upgrades: v.upgrades.map((u) => ({ date: u.date, costCents: u.costCents })),
     };
@@ -61,10 +63,10 @@ export default async function DashboardPage() {
   const global = summarizeVehicle({
     currentKm: currentKmSum,
     firstKm: firstKmSum,
+    today,
     maintenances: allMaintenances,
     upgrades: allUpgrades,
   });
-  const globalMonthlyAvg = Math.round(global.totalCents / Math.max(1, global.byMonth.length));
 
   // Per-vehicle spend list, sorted desc by total.
   const spendList = [...perVehicle].sort((a, b) => b.summary.totalCents - a.summary.totalCents);
@@ -76,7 +78,7 @@ export default async function DashboardPage() {
       currentKm: v.currentKm,
       today,
       spec,
-      maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleId: m.specRuleId })),
+      maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleIds: m.specRuleIds })),
       customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done })),
     };
     return computeAlerts(alertInput)
@@ -93,7 +95,7 @@ export default async function DashboardPage() {
 
       <KpiCards
         totalCents={global.totalCents}
-        monthlyAvgCents={globalMonthlyAvg}
+        monthlyAvgCents={global.monthlyAvgCents}
         costPerKmCents={global.costPerKmCents}
         maxExpenseCents={global.maxExpenseCents}
       />
@@ -126,7 +128,7 @@ export default async function DashboardPage() {
             <ul className="space-y-2">
               {topAlerts.map((a) => (
                 <li key={`${a.vehicleId}-${a.source}-${a.id}`}>
-                  <Link href={`/garage/${a.vehicleId}`} className={`mono flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] ${STATUS_STYLE[a.status] ?? STATUS_STYLE.unknown}`}>
+                  <Link href={a.source === "spec" ? `/garage/${a.vehicleId}?registrar=${a.id}` : `/garage/${a.vehicleId}#alertas`} className={`mono flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] ${STATUS_STYLE[a.status] ?? STATUS_STYLE.unknown}`}>
                     <span className="h-1.5 w-1.5 rounded-full bg-current" />
                     <span className="text-fg/80">{a.vehicleName}</span> · {a.label}
                   </Link>

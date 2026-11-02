@@ -2,15 +2,15 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import type { UpgradeCategory } from "@prisma/client";
 import { deleteUpgrade } from "@/actions/upgrades";
 import { AnimatedCard } from "@/components/common/AnimatedCard";
 import { Money } from "@/components/common/Money";
 import { UpgradeForm } from "./UpgradeForm";
 import { UPGRADE_LABELS } from "@/lib/categories";
+import { formatDateOnly } from "@/lib/dates";
 import { useUi } from "@/store/ui";
+import { Button } from "@/components/ui/button";
 
 type Att = { id: string; kind: "image" | "pdf"; url: string; fileName: string; caption?: string | null };
 export type Serialized = {
@@ -24,13 +24,12 @@ export type Serialized = {
   attachments: Att[];
 };
 
-function UpgradeNode({ u, i }: { u: Serialized; i: number }) {
+function UpgradeNode({ u, i, vehicleId }: { u: Serialized; i: number; vehicleId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const images = u.attachments.filter((a) => a.kind === "image");
   const lightboxImages = images.map((a) => ({ url: a.url, caption: a.caption }));
-  const d = new Date(u.date);
-  const dateLabel = format(d, "dd MMM yyyy", { locale: ptBR }).toUpperCase();
+  const dateLabel = formatDateOnly(u.date, "dd MMM yyyy").toUpperCase();
 
   function onDelete() {
     if (!window.confirm("Excluir este upgrade?")) return;
@@ -71,14 +70,18 @@ function UpgradeNode({ u, i }: { u: Serialized; i: number }) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <Money cents={u.costCents} className="mono font-bold text-accent" />
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={pending}
-            className="mono text-[10px] text-muted transition hover:text-accent disabled:opacity-50"
-          >
-            excluir
-          </button>
+          <div className="flex gap-3">
+            <UpgradeForm vehicleId={vehicleId} upgrade={u}
+              trigger={<button type="button" disabled={pending} className="mono text-[10px] text-muted transition hover:text-fg disabled:opacity-50">editar</button>} />
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={pending}
+              className="mono text-[10px] text-muted transition hover:text-accent disabled:opacity-50"
+            >
+              excluir
+            </button>
+          </div>
         </div>
       </div>
     </AnimatedCard>
@@ -89,13 +92,13 @@ export function UpgradeTimeline({ vehicleId, upgrades }: { vehicleId: string; up
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <UpgradeForm vehicleId={vehicleId} />
+        <UpgradeForm vehicleId={vehicleId} trigger={<Button className="bg-accent text-bg">+ Upgrade</Button>} />
       </div>
       {upgrades.length === 0 ? (
         <p className="mono text-sm text-muted">// nenhum upgrade registrado</p>
       ) : (
         <div className="relative grid gap-4 before:absolute before:bottom-2 before:left-[10px] before:top-2 before:w-px before:bg-border">
-          {upgrades.map((u, i) => <UpgradeNode key={u.id} u={u} i={i} />)}
+          {upgrades.map((u, i) => <UpgradeNode key={u.id} u={u} i={i} vehicleId={vehicleId} />)}
         </div>
       )}
     </div>

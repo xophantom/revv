@@ -2,13 +2,13 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import type { MaintenanceCategory } from "@prisma/client";
 import { deleteMaintenance } from "@/actions/maintenance";
 import { AttachmentList } from "@/components/common/AttachmentList";
 import { Money } from "@/components/common/Money";
 import { MAINTENANCE_LABELS } from "@/lib/categories";
+import { formatDateOnly } from "@/lib/dates";
+import { MaintenanceForm, type MaintenanceFormProps } from "./MaintenanceForm";
 
 type Att = { id: string; kind: "image" | "pdf"; url: string; fileName: string; caption?: string | null };
 export type MaintRecord = {
@@ -16,6 +16,7 @@ export type MaintRecord = {
   date: string;
   km: number;
   category: MaintenanceCategory;
+  specRuleIds: string[];
   title: string;
   workshop: string | null;
   costCents: number;
@@ -23,13 +24,13 @@ export type MaintRecord = {
   attachments: Att[];
 };
 
-export function MaintenanceRow({ record }: { record: MaintRecord }) {
+export function MaintenanceRow({ record, form }: { record: MaintRecord; form: MaintenanceFormProps }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const d = new Date(record.date);
-  const day = format(d, "dd", { locale: ptBR });
-  const month = format(d, "MMM", { locale: ptBR }).toUpperCase();
-  const year = format(d, "yyyy", { locale: ptBR });
+  const day = formatDateOnly(record.date, "dd");
+  const month = formatDateOnly(record.date, "MMM").toUpperCase();
+  const year = formatDateOnly(record.date, "yyyy");
+  const items = record.specRuleIds.flatMap((id) => form.specRules.find((r) => r.id === id)?.label ?? []);
 
   function onDelete() {
     if (!window.confirm("Excluir esta manutenção?")) return;
@@ -52,6 +53,7 @@ export function MaintenanceRow({ record }: { record: MaintRecord }) {
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{record.title}</span>
           <span className="mono rounded border border-border px-1.5 py-0.5 text-[10px] text-muted">{MAINTENANCE_LABELS[record.category]}</span>
+          {items.length > 0 && <span className="mono text-[10px] text-muted">{items.join(" · ")}</span>}
         </div>
         <div className="mono mt-0.5 text-xs text-muted">
           {record.workshop ? record.workshop + " · " : ""}{record.km.toLocaleString("pt-BR")} km
@@ -61,14 +63,18 @@ export function MaintenanceRow({ record }: { record: MaintRecord }) {
       </div>
       <div className="flex flex-col items-end gap-2">
         <Money cents={record.costCents} className="mono font-bold text-accent" />
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={pending}
-          className="mono text-[10px] text-muted transition hover:text-accent disabled:opacity-50"
-        >
-          excluir
-        </button>
+        <div className="flex gap-3">
+          <MaintenanceForm {...form} record={record}
+            trigger={<button type="button" disabled={pending} className="mono text-[10px] text-muted transition hover:text-fg disabled:opacity-50">editar</button>} />
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={pending}
+            className="mono text-[10px] text-muted transition hover:text-accent disabled:opacity-50"
+          >
+            excluir
+          </button>
+        </div>
       </div>
     </div>
   );

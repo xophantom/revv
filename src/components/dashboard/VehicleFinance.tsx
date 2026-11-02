@@ -4,14 +4,14 @@ import { KpiCards } from "./KpiCards";
 import { SpendOverTime } from "./SpendOverTime";
 import { CategoryBreakdown } from "./CategoryBreakdown";
 
-type Props = { summary: FinanceSummary; monthlyAvgCents: number };
+type Props = { summary: FinanceSummary };
 
-export function VehicleFinance({ summary, monthlyAvgCents }: Props) {
+export function VehicleFinance({ summary }: Props) {
   return (
     <div className="space-y-5">
       <KpiCards
         totalCents={summary.totalCents}
-        monthlyAvgCents={monthlyAvgCents}
+        monthlyAvgCents={summary.monthlyAvgCents}
         costPerKmCents={summary.costPerKmCents}
         maxExpenseCents={summary.maxExpenseCents}
       />
