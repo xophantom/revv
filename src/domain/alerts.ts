@@ -2,8 +2,8 @@ import type { MaintenanceCategory } from "@prisma/client";
 import type { VehicleSpecData } from "./spec-schema";
 import { addMonthsUTC, daysBetween } from "@/lib/dates";
 
-const KM_SOON = 1500;
-const DAYS_SOON = 30;
+export const KM_SOON = 1500;
+export const DAYS_SOON = 30;
 
 export type AlertStatus = "overdue" | "unknown" | "soon" | "ok";
 export type AlertDriver = "km" | "time" | null;
@@ -16,6 +16,10 @@ export type Alert = {
   remainingDays: number | null; // calendar days until due (negative = overdue)
   driver: AlertDriver; // which dimension set the status (so the UI shows the right number)
   source: "spec" | "custom";
+  intervalKm: number | null; // spec rules only
+  intervalMonths: number | null;
+  lastKm: number | null; // odometer at the last service (or the explicit baseline)
+  lastDate: Date | null; // date of the last service
 };
 
 type SpecRule = {
@@ -134,7 +138,11 @@ export function computeAlerts(input: AlertInput): Alert[] {
     }
 
     const { status, driver } = combine(dims);
-    alerts.push({ id: rule.id, label: rule.label, status, remainingKm, remainingDays, driver, source: "spec" });
+    alerts.push({
+      id: rule.id, label: rule.label, status, remainingKm, remainingDays, driver, source: "spec",
+      intervalKm: rule.intervalKm ?? null, intervalMonths: rule.intervalMonths ?? null,
+      lastKm: last?.km ?? rule.baselineKm ?? null, lastDate: last?.date ?? null,
+    });
   }
 
   for (const c of input.customAlerts) {
@@ -145,7 +153,10 @@ export function computeAlerts(input: AlertInput): Alert[] {
     if (remainingKm != null) dims.push({ status: classifyDim(remainingKm, KM_SOON), dim: "km" });
     if (remainingDays != null) dims.push({ status: classifyDim(remainingDays, DAYS_SOON), dim: "time" });
     const { status, driver } = combine(dims);
-    alerts.push({ id: c.id, label: c.label, status, remainingKm, remainingDays, driver, source: "custom" });
+    alerts.push({
+      id: c.id, label: c.label, status, remainingKm, remainingDays, driver, source: "custom",
+      intervalKm: null, intervalMonths: null, lastKm: null, lastDate: null,
+    });
   }
 
   // primary: status severity; secondary: most urgent first within the same status.

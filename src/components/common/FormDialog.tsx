@@ -28,8 +28,9 @@ export function FormDialog({ title, trigger, open: openProp, onOpenChange, child
     <Dialog open={open} onOpenChange={(next) => (next || !busy) && setOpen(next)}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="glass" onOpenAutoFocus={(e) => {
-        // Start on the first field, not on ✕ (Radix focuses the first tabbable element).
-        const field = (e.currentTarget as HTMLElement).querySelector<HTMLElement>("input:not([type=file]), select, textarea");
+        // Start on the first field, not on ✕ (Radix focuses the first tabbable element). Skips the
+        // hidden inputs behind masked fields and Radix Select.
+        const field = (e.currentTarget as HTMLElement).querySelector<HTMLElement>("input:not([type=file]):not([type=hidden]):not([aria-hidden]), textarea");
         if (field) { e.preventDefault(); field.focus(); }
       }}>
         <DialogHeader className="flex items-center justify-between gap-3">

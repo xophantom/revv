@@ -2,16 +2,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 import { createCustomAlert, updateCustomAlert } from "@/actions/alerts";
 import { FormDialog, type FormDialogApi } from "@/components/common/FormDialog";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { IntegerInput } from "@/components/ui/masked-input";
 import type { CustomAlertRecord } from "./CustomAlertList";
 
 export function CustomAlertForm({ vehicleId, alert, trigger }: { vehicleId: string; alert?: CustomAlertRecord; trigger?: React.ReactNode }) {
   return (
-    <FormDialog title={alert ? "Editar alerta" : "Novo alerta"} trigger={trigger ?? <Button className="border border-border text-muted">+ alerta</Button>}>
+    <FormDialog title={alert ? "Editar alerta" : "Novo alerta"} trigger={trigger ?? <Button variant="outline" size="sm"><Plus size={14} /> Alerta</Button>}>
       {(api) => <CustomAlertFields vehicleId={vehicleId} alert={alert} {...api} />}
     </FormDialog>
   );
@@ -49,13 +51,13 @@ function CustomAlertFields({ vehicleId, alert, close, setBusy }: { vehicleId: st
 
   return (
     <form onSubmit={onSubmit} className="grid gap-3">
-      <div><Label>Descrição</Label><Input name="label" required defaultValue={alert?.label} /></div>
+      <Field label="Descrição"><Input name="label" required defaultValue={alert?.label} placeholder="Ex.: IPVA, licenciamento, seguro" /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Km (opcional)</Label><Input name="dueKm" type="number" inputMode="numeric" defaultValue={alert?.dueKm ?? ""} /></div>
-        <div><Label>Data (opcional)</Label><Input name="dueDate" type="date" defaultValue={alert?.dueDate?.slice(0, 10) ?? ""} /></div>
+        <Field label="Km (opcional)"><IntegerInput name="dueKm" suffix="km" defaultValue={alert?.dueKm} /></Field>
+        <Field label="Data (opcional)"><Input name="dueDate" type="date" defaultValue={alert?.dueDate?.slice(0, 10) ?? ""} /></Field>
       </div>
       <p className="mono text-[11px] text-muted">Informe pelo menos km ou data.</p>
-      <Button type="submit" disabled={pending} className="bg-accent text-bg">{pending ? "Salvando..." : "Salvar"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Salvando..." : "Salvar"}</Button>
     </form>
   );
 }

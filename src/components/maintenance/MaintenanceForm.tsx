@@ -3,21 +3,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { MaintenanceCategory } from "@prisma/client";
+import { Check } from "lucide-react";
 import { createMaintenance, updateMaintenance } from "@/actions/maintenance";
 import type { SpecRuleOption } from "@/domain/alerts";
 import { AttachmentUploader, UploadedFiles, type Uploaded } from "@/components/common/AttachmentUploader";
 import { FormDialog, type FormDialogApi } from "@/components/common/FormDialog";
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { IntegerInput, MoneyInput } from "@/components/ui/masked-input";
 import { Textarea } from "@/components/ui/textarea";
 import { MAINTENANCE_CATEGORIES, MAINTENANCE_LABELS } from "@/lib/categories";
-import { centsToInput, realToCents } from "@/lib/money";
+import { MAINTENANCE_ICONS } from "@/lib/category-icons";
+import { realToCents } from "@/lib/money";
 import { todayInputValue } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { MaintRecord } from "./MaintenanceRow";
-
-const selectClass = "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent";
 
 // Prefill for a new record, e.g. from an alert chip.
 export type MaintDraft = { category: MaintenanceCategory; specRuleIds: string[]; title: string; km: number };
@@ -109,40 +111,39 @@ function MaintenanceFields({ vehicleId, specRules, currentKm, record, draft, clo
   return (
     <form onSubmit={onSubmit} className="grid gap-3">
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Data</Label><Input name="date" type="date" defaultValue={record ? record.date.slice(0, 10) : todayInputValue()} required /></div>
-        <div><Label>Km</Label><Input name="km" type="number" inputMode="numeric" defaultValue={record?.km ?? draft?.km} placeholder={`atual: ${currentKm.toLocaleString("pt-BR")}`} required /></div>
+        <Field label="Data"><Input name="date" type="date" defaultValue={record ? record.date.slice(0, 10) : todayInputValue()} required /></Field>
+        <Field label="Km"><IntegerInput name="km" suffix="km" required defaultValue={record?.km ?? draft?.km} placeholder={`atual: ${currentKm.toLocaleString("pt-BR")}`} /></Field>
       </div>
-      <div><Label>Categoria</Label>
-        <select name="category" className={selectClass} value={category} onChange={(e) => changeCategory(e.target.value as MaintenanceCategory)}>
-          {MAINTENANCE_CATEGORIES.map((c) => <option key={c} value={c}>{MAINTENANCE_LABELS[c]}</option>)}
-        </select>
-      </div>
-      {specRules.length > 0 && (
-        <div>
-          <Label>Itens feitos</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {specRules.map((r) => {
-              const on = items.includes(r.id);
-              return (
-                <button key={r.id} type="button" aria-pressed={on} disabled={pending} onClick={() => toggle(r.id)}
-                  className={cn("mono cursor-pointer rounded-md border px-2 py-1 text-[11px] transition disabled:opacity-50",
-                    on ? "border-accent bg-accent/15 text-accent" : "border-border text-muted hover:text-fg")}>
-                  {on ? "✓ " : ""}{r.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className={cn("mono mt-1 text-[11px]", needsItem ? "text-accent" : "text-muted")}>
-            {needsItem ? "Marque o que foi feito, senão este registro não atualiza nenhum alerta." : "Os itens marcados zeram os alertas da ficha."}
-          </p>
+      <Field label="Categoria" group>
+        <div className="flex flex-wrap gap-1.5">
+          {MAINTENANCE_CATEGORIES.map((c) => (
+            <Chip key={c} icon={MAINTENANCE_ICONS[c]} selected={c === category} disabled={pending} onClick={() => changeCategory(c)}>
+              {MAINTENANCE_LABELS[c]}
+            </Chip>
+          ))}
         </div>
+      </Field>
+      {specRules.length > 0 && (
+        <Field label="Itens feitos" group hint={
+          <span className={cn(needsItem && "text-accent")}>
+            {needsItem ? "Marque o que foi feito, senão este registro não atualiza nenhum alerta." : "Os itens marcados zeram os alertas da ficha."}
+          </span>
+        }>
+          <div className="flex flex-wrap gap-1.5">
+            {specRules.map((r) => (
+              <Chip key={r.id} selected={items.includes(r.id)} disabled={pending} onClick={() => toggle(r.id)}>
+                {items.includes(r.id) && <Check size={12} aria-hidden />}{r.label}
+              </Chip>
+            ))}
+          </div>
+        </Field>
       )}
-      <div><Label>Título</Label><Input name="title" required defaultValue={record?.title ?? draft?.title} /></div>
+      <Field label="Título"><Input name="title" required defaultValue={record?.title ?? draft?.title} placeholder="Ex.: Troca de óleo e filtro" /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Oficina</Label><Input name="workshop" defaultValue={record?.workshop ?? ""} /></div>
-        <div><Label>Custo</Label><Input name="cost" type="text" inputMode="decimal" placeholder="0,00" defaultValue={record ? centsToInput(record.costCents) : ""} /></div>
+        <Field label="Oficina"><Input name="workshop" defaultValue={record?.workshop ?? ""} /></Field>
+        <Field label="Custo"><MoneyInput name="cost" defaultCents={record?.costCents} /></Field>
       </div>
-      <div><Label>Notas</Label><Textarea name="notes" defaultValue={record?.notes ?? ""} /></div>
+      <Field label="Notas"><Textarea name="notes" defaultValue={record?.notes ?? ""} /></Field>
       <div>
         <AttachmentUploader disabled={pending} onBusyChange={setUploading}
           onUploaded={(f) => setAttachments((prev) => [...prev, ...f])} />
@@ -151,7 +152,7 @@ function MaintenanceFields({ vehicleId, specRules, currentKm, record, draft, clo
         <UploadedFiles files={attachments} disabled={pending}
           onRemove={(f) => setAttachments((prev) => prev.filter((a) => a.key !== f.key))} />
       </div>
-      <Button type="submit" disabled={pending || uploading} className="bg-accent text-bg">
+      <Button type="submit" disabled={pending || uploading}>
         {pending ? "Salvando..." : uploading ? "Aguardando upload..." : "Salvar"}
       </Button>
     </form>

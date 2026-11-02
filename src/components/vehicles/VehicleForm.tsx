@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 import { createVehicle, updateVehicle } from "@/actions/vehicles";
 import { AttachmentUploader, UploadedFiles, type Uploaded } from "@/components/common/AttachmentUploader";
 import { FormDialog, type FormDialogApi } from "@/components/common/FormDialog";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { IntegerInput, PlateInput } from "@/components/ui/masked-input";
 
 export type EditableVehicle = {
   id: string;
@@ -24,7 +26,7 @@ export type EditableVehicle = {
 
 export function VehicleForm({ vehicle, trigger }: { vehicle?: EditableVehicle; trigger?: React.ReactNode }) {
   return (
-    <FormDialog title={vehicle ? "Editar veículo" : "Novo veículo"} trigger={trigger ?? <Button className="bg-accent text-bg">+ Veículo</Button>}>
+    <FormDialog title={vehicle ? "Editar veículo" : "Novo veículo"} trigger={trigger ?? <Button><Plus size={16} /> Veículo</Button>}>
       {(api) => <VehicleFields vehicle={vehicle} {...api} />}
     </FormDialog>
   );
@@ -68,20 +70,20 @@ function VehicleFields({ vehicle, close, setBusy }: { vehicle?: EditableVehicle 
 
   return (
     <form onSubmit={onSubmit} className="grid gap-3">
-      <div><Label>Nome</Label><Input name="name" required defaultValue={vehicle?.name} /></div>
+      <Field label="Nome"><Input name="name" required defaultValue={vehicle?.name} placeholder="Ex.: Civic do dia a dia" /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Placa</Label><Input name="plate" defaultValue={vehicle?.plate ?? ""} /></div>
-        <div><Label>Ano</Label><Input name="year" type="number" defaultValue={vehicle?.year ?? ""} /></div>
+        <Field label="Placa"><PlateInput name="plate" defaultValue={vehicle?.plate ?? ""} placeholder="ABC1D23" /></Field>
+        <Field label="Ano"><Input name="year" inputMode="numeric" maxLength={4} pattern="[0-9]{4}" title="Ano com 4 dígitos" defaultValue={vehicle?.year ?? ""} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Marca</Label><Input name="make" defaultValue={vehicle?.make ?? ""} /></div>
-        <div><Label>Modelo</Label><Input name="model" defaultValue={vehicle?.model ?? ""} /></div>
+        <Field label="Marca"><Input name="make" defaultValue={vehicle?.make ?? ""} /></Field>
+        <Field label="Modelo"><Input name="model" defaultValue={vehicle?.model ?? ""} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Motor</Label><Input name="engine" defaultValue={vehicle?.engine ?? ""} /></div>
-        <div><Label>Cor</Label><Input name="color" defaultValue={vehicle?.color ?? ""} /></div>
+        <Field label="Motor"><Input name="engine" defaultValue={vehicle?.engine ?? ""} placeholder="Ex.: 2.0 16V" /></Field>
+        <Field label="Cor"><Input name="color" defaultValue={vehicle?.color ?? ""} /></Field>
       </div>
-      <div><Label>Km atual</Label><Input name="currentKm" type="number" inputMode="numeric" required={Boolean(vehicle)} defaultValue={vehicle?.currentKm ?? 0} /></div>
+      <Field label="Km atual"><IntegerInput name="currentKm" suffix="km" required={Boolean(vehicle)} defaultValue={vehicle?.currentKm ?? null} placeholder="0" /></Field>
       <div>
         <AttachmentUploader label={vehicle?.photoUrl ? "Trocar foto" : "Foto do veículo"} accept="image/*" multiple={false}
           disabled={pending} onBusyChange={setUploading}
@@ -89,7 +91,7 @@ function VehicleFields({ vehicle, close, setBusy }: { vehicle?: EditableVehicle 
         <UploadedFiles files={photo ? [{ key: photo.key, fileName: photo.fileName }] : keepPhoto ? [{ key: "current", fileName: "foto atual" }] : []} prefix="Foto: " disabled={pending}
           onRemove={() => { setPhoto(null); setKeepPhoto(false); }} />
       </div>
-      <Button type="submit" disabled={pending || uploading} className="bg-accent text-bg">
+      <Button type="submit" disabled={pending || uploading}>
         {pending ? "Salvando..." : uploading ? "Aguardando upload..." : "Salvar"}
       </Button>
     </form>

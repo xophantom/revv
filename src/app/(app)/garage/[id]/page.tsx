@@ -2,20 +2,24 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { vehicleSpecSchema, emptySpec } from "@/domain/spec-schema";
-import { specRuleOptions, type AlertInput } from "@/domain/alerts";
-import { SpecSheet } from "@/components/spec/SpecSheet";
+import { ImagePlus } from "lucide-react";
+import { computeAlerts, specRuleOptions, type AlertInput } from "@/domain/alerts";
+import { telemetryItems } from "@/domain/telemetry";
+import { TelemetryGrid } from "@/components/spec/TelemetryGrid";
 import { KmEditor } from "@/components/vehicles/KmEditor";
 import { VehicleActions } from "@/components/vehicles/VehicleActions";
 import { VehicleForm } from "@/components/vehicles/VehicleForm";
-import { AlertChips } from "@/components/alerts/AlertChips";
+import { AlertSummary } from "@/components/alerts/AlertSummary";
 import { CustomAlertForm } from "@/components/alerts/CustomAlertForm";
 import { CustomAlertList } from "@/components/alerts/CustomAlertList";
 import { MaintenanceList } from "@/components/maintenance/MaintenanceList";
 import { UpgradeTimeline } from "@/components/upgrades/UpgradeTimeline";
 import { Gallery } from "@/components/gallery/Gallery";
 import { VehicleFinance } from "@/components/dashboard/VehicleFinance";
-import { summarizeVehicle, type FinanceInput } from "@/domain/finance";
+import { firstLoggedKm, toFinanceEntries } from "@/domain/finance";
+import { alertDetail } from "@/lib/alert-text";
 import { todayDateOnly } from "@/lib/dates";
+import { SectionHeading } from "@/components/ui/panel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default async function VehiclePage({ params, searchParams }: {
@@ -45,6 +49,7 @@ export default async function VehiclePage({ params, searchParams }: {
     maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleIds: m.specRuleIds })),
     customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done })),
   };
+  const alerts = computeAlerts(alertInput);
   const maintRecords = v.maintenances.map((m) => ({
     id: m.id,
     date: m.date.toISOString(),
@@ -67,22 +72,18 @@ export default async function VehiclePage({ params, searchParams }: {
     notes: u.notes,
     attachments: u.attachments.map((a) => ({ id: a.id, kind: a.kind, url: `/api/attachments/${a.id}/raw`, fileName: a.fileName, caption: a.caption })),
   }));
-  const customAlertRecords = v.customAlerts.map((c) => ({
-    id: c.id,
-    label: c.label,
-    dueKm: c.dueKm,
-    dueDate: c.dueDate ? c.dueDate.toISOString() : null,
-    done: c.done,
-  }));
-  const firstKm = v.maintenances.length ? Math.min(...v.maintenances.map((m) => m.km)) : v.currentKm;
-  const financeInput: FinanceInput = {
-    currentKm: v.currentKm,
-    firstKm,
-    today,
-    maintenances: v.maintenances.map((m) => ({ date: m.date, costCents: m.costCents })),
-    upgrades: v.upgrades.map((u) => ({ date: u.date, costCents: u.costCents })),
-  };
-  const summary = summarizeVehicle(financeInput);
+  const customAlertRecords = v.customAlerts.map((c) => {
+    const state = alerts.find((a) => a.source === "custom" && a.id === c.id); // absent when done
+    return {
+      id: c.id,
+      label: c.label,
+      dueKm: c.dueKm,
+      dueDate: c.dueDate ? c.dueDate.toISOString() : null,
+      done: c.done,
+      status: state?.status,
+      detail: state && alertDetail(state),
+    };
+  });
   const form = { vehicleId: v.id, specRules: specRuleOptions(spec), currentKm: v.currentKm };
   const editable = { id: v.id, name: v.name, plate: v.plate, make: v.make, model: v.model, year: v.year, engine: v.engine, color: v.color, currentKm: v.currentKm, photoUrl: v.photoUrl };
   const details = [[v.make, v.model].filter(Boolean).join(" "), v.year, v.engine, v.color].filter(Boolean).join(" · ");
@@ -93,12 +94,14 @@ export default async function VehiclePage({ params, searchParams }: {
           <div className="h-48 rounded-xl border border-border bg-surface2 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(0deg,rgba(0,0,0,.5),transparent),url(/api/vehicles/${v.id}/photo?v=${encodeURIComponent(v.photoKey ?? "")})` }} />
         ) : (
           <VehicleForm vehicle={editable} trigger={
-            <button type="button" className="mono h-48 cursor-pointer rounded-xl border border-dashed border-border bg-surface2 text-xs text-muted transition hover:text-fg">+ adicionar foto</button>
+            <button type="button" className="mono flex h-48 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface2 text-xs text-muted transition hover:border-white/25 hover:text-fg">
+              <ImagePlus size={22} aria-hidden /> adicionar foto
+            </button>
           } />
         )}
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="text-4xl font-bold">{v.name}</h1>
+            <h1 className="break-words text-3xl font-bold sm:text-4xl">{v.name}</h1>
             <VehicleActions vehicle={editable} />
           </div>
           {(v.plate || details) && (
@@ -108,28 +111,26 @@ export default async function VehiclePage({ params, searchParams }: {
             </div>
           )}
           <KmEditor id={v.id} currentKm={v.currentKm} />
-          <AlertChips input={alertInput} form={form} register={typeof registrar === "string" ? registrar : undefined} />
+          <AlertSummary alerts={alerts} />
         </div>
       </section>
-      <section className="mb-6"><SpecSheet vehicleId={v.id} spec={spec} /></section>
-      <section id="alertas" className="mb-6 scroll-mt-6">
-        <div className="flex items-center justify-between">
-          <h2 className="mono text-sm text-accent">// ALERTAS PERSONALIZADOS</h2>
-          <CustomAlertForm vehicleId={v.id} />
-        </div>
+      <TelemetryGrid vehicleId={v.id} items={telemetryItems(spec, alerts)} notes={spec.freeNotes} form={form}
+        register={typeof registrar === "string" ? registrar : undefined} />
+      <section id="alertas" className="mb-8 scroll-mt-6">
+        <SectionHeading action={<CustomAlertForm vehicleId={v.id} />}>Alertas personalizados</SectionHeading>
         <CustomAlertList vehicleId={v.id} alerts={customAlertRecords} />
       </section>
       <Tabs defaultValue="maint">
         <TabsList>
-          <TabsTrigger value="maint">Manutenções <span className="mono ml-1 text-[10px] text-accent">{v.maintenances.length}</span></TabsTrigger>
-          <TabsTrigger value="upg">Upgrades <span className="mono ml-1 text-[10px] text-accent">{v.upgrades.length}</span></TabsTrigger>
-          <TabsTrigger value="gallery">Galeria <span className="mono ml-1 text-[10px] text-accent">{v.attachments.length}</span></TabsTrigger>
+          <TabsTrigger value="maint">Manutenções <span className="mono ml-1.5 text-[11px] text-accent">{v.maintenances.length}</span></TabsTrigger>
+          <TabsTrigger value="upg">Upgrades <span className="mono ml-1.5 text-[11px] text-accent">{v.upgrades.length}</span></TabsTrigger>
+          <TabsTrigger value="gallery">Galeria <span className="mono ml-1.5 text-[11px] text-accent">{v.attachments.length}</span></TabsTrigger>
           <TabsTrigger value="finance">Financeiro</TabsTrigger>
         </TabsList>
         <TabsContent value="maint"><MaintenanceList {...form} records={maintRecords} /></TabsContent>
         <TabsContent value="upg"><UpgradeTimeline vehicleId={v.id} upgrades={upgradeRecords} /></TabsContent>
         <TabsContent value="gallery"><Gallery images={v.attachments.map((a) => ({ url: `/api/attachments/${a.id}/raw`, caption: a.caption }))} /></TabsContent>
-        <TabsContent value="finance"><VehicleFinance summary={summary} /></TabsContent>
+        <TabsContent value="finance"><VehicleFinance entries={toFinanceEntries(v)} currentKm={v.currentKm} firstKm={firstLoggedKm(v)} today={today} /></TabsContent>
       </Tabs>
     </div>
   );

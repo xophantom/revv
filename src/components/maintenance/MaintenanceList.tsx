@@ -1,24 +1,23 @@
 "use client";
-import { useUi } from "@/store/ui";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { todayInputValue } from "@/lib/dates";
 import { MaintenanceForm, type MaintenanceFormProps } from "./MaintenanceForm";
-import { Filters } from "./Filters";
+import { Filters, NO_FILTER, periodStart, type MaintFilter } from "./Filters";
 import { MaintenanceRow, type MaintRecord } from "./MaintenanceRow";
 
 export function MaintenanceList({ records, ...form }: MaintenanceFormProps & { records: MaintRecord[] }) {
-  const { maintFilter } = useUi();
-  const filtered = records.filter((r) => {
-    if (maintFilter.category && r.category !== maintFilter.category) return false;
-    const date = r.date.slice(0, 10);
-    if (maintFilter.from && date < maintFilter.from) return false;
-    if (maintFilter.to && date > maintFilter.to) return false;
-    return true;
-  });
+  // Local, so it starts clean on every vehicle.
+  const [filter, setFilter] = useState<MaintFilter>(NO_FILTER);
+  const from = periodStart(filter.period, todayInputValue());
+  const filtered = records.filter((r) =>
+    (filter.category === "all" || r.category === filter.category) && (!from || r.date.slice(0, 10) >= from));
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <MaintenanceForm {...form} trigger={<Button className="bg-accent text-bg">+ Manutenção</Button>} />
-        <Filters />
+        <MaintenanceForm {...form} trigger={<Button><Plus size={16} /> Manutenção</Button>} />
+        {records.length > 0 && <Filters value={filter} onChange={setFilter} />}
       </div>
       {filtered.length === 0 ? (
         <p className="mono text-sm text-muted">{records.length ? "// nenhuma manutenção corresponde ao filtro" : "// nenhuma manutenção registrada"}</p>

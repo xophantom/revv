@@ -1,24 +1,24 @@
 "use client";
-import type { FinanceSummary } from "@/domain/finance";
-import { KpiCards } from "./KpiCards";
-import { SpendOverTime } from "./SpendOverTime";
-import { CategoryBreakdown } from "./CategoryBreakdown";
+import { useState } from "react";
+import { summarizeFinance, type FinanceEntry, type FinancePeriod } from "@/domain/finance";
+import { PeriodSelect } from "./PeriodSelect";
+import { FinancePanels } from "./FinancePanels";
 
-type Props = { summary: FinanceSummary };
+type Props = { entries: FinanceEntry[]; currentKm: number; firstKm: number; today: Date };
 
-export function VehicleFinance({ summary }: Props) {
+export function VehicleFinance({ entries, currentKm, firstKm, today }: Props) {
+  const [period, setPeriod] = useState<FinancePeriod>("all");
+  const summary = summarizeFinance({
+    entries,
+    today,
+    period,
+    // Every entry here belongs to this vehicle.
+    odometers: [{ vehicleId: entries[0]?.vehicleId ?? "", currentKm, firstKm }],
+  });
   return (
-    <div className="space-y-5">
-      <KpiCards
-        totalCents={summary.totalCents}
-        monthlyAvgCents={summary.monthlyAvgCents}
-        costPerKmCents={summary.costPerKmCents}
-        maxExpenseCents={summary.maxExpenseCents}
-      />
-      <div className="grid gap-5 lg:grid-cols-2">
-        <SpendOverTime byMonth={summary.byMonth} />
-        <CategoryBreakdown maintenanceCents={summary.maintenanceCents} upgradeCents={summary.upgradeCents} />
-      </div>
+    <div className="space-y-3 sm:space-y-4">
+      <PeriodSelect value={period} onChange={setPeriod} />
+      <FinancePanels summary={summary} period={period} />
     </div>
   );
 }
