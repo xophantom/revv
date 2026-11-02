@@ -97,7 +97,7 @@ export function MoneyInput({ defaultCents = 0, onBlur, ...props }: Base & { defa
 export function PlateInput({ className, ...props }: Omit<InputProps, "onChange" | "type">) {
   return (
     <Input {...props} type="text" autoCapitalize="characters" autoComplete="off" spellCheck={false} maxLength={8}
-      className={cn("mono uppercase", className)}
+      className={cn("tabular-nums uppercase", className)}
       onChange={(e) => {
         const el = e.target;
         const clean = (s: string) => s.toUpperCase().replace(/[^A-Z0-9-]/g, "");

@@ -30,7 +30,7 @@ export function Lightbox() {
           {lb.images.length > 1 && (
             <button className="absolute right-3 cursor-pointer rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Próxima foto" onClick={(e) => { e.stopPropagation(); open(lb.images, (lb.index + 1) % lb.images.length); }}><ChevronRight size={32} /></button>
           )}
-          {lb.images[lb.index].caption && <div className="mono absolute bottom-5 text-xs text-white/70">{lb.images[lb.index].caption}</div>}
+          {lb.images[lb.index].caption && <div className="tabular-nums absolute bottom-5 text-xs text-white/70">{lb.images[lb.index].caption}</div>}
         </motion.div>
       )}
     </AnimatePresence>

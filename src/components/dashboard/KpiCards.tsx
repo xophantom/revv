@@ -2,11 +2,11 @@ import { Panel } from "@/components/ui/panel";
 import { expenseLabel, shortMonthLabel, type FinanceSummary } from "@/domain/finance";
 import { centsToBRL } from "@/lib/money";
 
-function Kpi({ label, value, caption }: { label: string; value: string; caption: string }) {
+export function Kpi({ label, value, caption }: { label: string; value: string; caption: string }) {
   return (
     <Panel title={label} className="min-w-0 p-3 sm:p-4">
       <div className="text-lg font-bold tabular-nums wrap-anywhere sm:text-2xl">{value}</div>
-      <div className="mono mt-1 line-clamp-2 text-[11px] text-muted wrap-break-word" title={caption}>{caption}</div>
+      <div className="tabular-nums mt-1 line-clamp-2 text-[11px] text-muted wrap-break-word" title={caption}>{caption}</div>
     </Panel>
   );
 }

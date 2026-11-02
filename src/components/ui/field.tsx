@@ -29,7 +29,7 @@ export function Field({ label, hint, group = false, className, children }: {
           <FieldContext.Provider value={id}>{children}</FieldContext.Provider>
         </>
       )}
-      {hint && <p className="mono mt-1 text-[11px] text-muted">{hint}</p>}
+      {hint && <p className="tabular-nums mt-1 text-[11px] text-muted">{hint}</p>}
     </div>
   );
 }

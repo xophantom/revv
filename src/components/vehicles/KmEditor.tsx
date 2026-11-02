@@ -25,7 +25,7 @@ export function KmEditor({ id, currentKm }: { id: string; currentKm: number }) {
   }
 
   return (
-    <div className="mono mt-4 text-xs text-muted">
+    <div className="tabular-nums mt-4 text-xs text-muted">
       {editing ? (
         <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); save(); }}
           onKeyDown={(e) => { if (e.key === "Escape") setEditing(false); }}>

@@ -7,8 +7,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   return (
     <div className="min-h-screen">
-      <Topbar userName={user.name} />
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+      <Topbar userName={user.name ?? user.email} />
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
       <Lightbox />
       <Toaster />
     </div>

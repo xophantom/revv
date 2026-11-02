@@ -2,7 +2,7 @@ import { type NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { streamPrivateBlob } from "@/lib/blob";
+import { CACHE_IMMUTABLE, CACHE_REVALIDATE, streamPrivateBlob } from "@/lib/blob";
 
 export const runtime = "nodejs";
 
@@ -15,5 +15,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const v = await db.vehicle.findUnique({ where: { id } });
   if (!v || v.userId !== session.user.id || !v.photoUrl) return new NextResponse("Not found", { status: 404 });
 
-  return streamPrivateBlob(v.photoUrl, request.headers.get("if-none-match"));
+  // `?v=<photoKey>` pins the URL to this exact photo (keys carry a random suffix, never reused).
+  // Without it, or with an old key from a stale page, the URL may show another photo later.
+  const pinned = Boolean(v.photoKey) && request.nextUrl.searchParams.get("v") === v.photoKey;
+  return streamPrivateBlob(v.photoUrl, request.headers.get("if-none-match"), pinned ? CACHE_IMMUTABLE : CACHE_REVALIDATE);
 }

@@ -17,7 +17,7 @@ Input.displayName = "Input";
 
 // Fixed text inside the field ("R$", "km"), outside the typed value.
 export function Affix({ prefix, suffix, children }: { prefix?: string; suffix?: string; children: React.ReactElement<{ className?: string }> }) {
-  const affix = "mono pointer-events-none absolute top-1/2 -translate-y-1/2 text-xs text-muted";
+  const affix = "tabular-nums pointer-events-none absolute top-1/2 -translate-y-1/2 text-xs text-muted";
   return (
     <div className="relative">
       {prefix && <span className={cn(affix, "left-3")}>{prefix}</span>}

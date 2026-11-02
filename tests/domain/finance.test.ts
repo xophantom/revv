@@ -124,6 +124,39 @@ describe("summarizeFinance", () => {
   });
 });
 
+describe("fuel", () => {
+  const fuel = (date: string, costCents: number, over: Partial<FinanceEntry> = {}) =>
+    entry(date, costCents, { kind: "fuel", category: "FUEL", title: "Abastecimento", ...over });
+
+  it("counts fuel as spending, in its own share of the total", () => {
+    const s = summarizeFinance({ ...input, entries: [...entries, fuel("2026-02-10", 25000), fuel("2026-04-20", 27000)] });
+    expect(s.fuelCents).toBe(52000);
+    expect(s.maintenanceCents).toBe(92000);
+    expect(s.upgradeCents).toBe(250000);
+    expect(s.totalCents).toBe(394000);
+    expect(s.maintenanceCents + s.upgradeCents + s.fuelCents).toBe(s.totalCents);
+  });
+
+  it("adds fuel to the monthly bars, the category breakdown and cost per km", () => {
+    const s = summarizeFinance({ ...input, entries: [...entries, fuel("2026-02-10", 25000), fuel("2026-04-20", 27000)] });
+    expect(s.byMonth.find((m) => m.month === "2026-02")?.cents).toBe(25000);
+    expect(s.byMonth.find((m) => m.month === "2026-04")?.cents).toBe(38000 + 27000);
+    expect(s.byCategory).toContainEqual({ kind: "fuel", category: "FUEL", cents: 52000 });
+    expect(s.costPerKmCents).toBe(Math.round(394000 / 7430));
+  });
+
+  it("keeps fuel out of the maintenance and upgrade totals", () => {
+    const s = summarizeFinance({ ...input, entries: [fuel("2026-03-01", 30000)] });
+    expect(s).toMatchObject({ maintenanceCents: 0, upgradeCents: 0, fuelCents: 30000, totalCents: 30000 });
+    expect(s.maxExpense?.title).toBe("Abastecimento");
+  });
+
+  it("filters fuel by period like any other expense", () => {
+    const s = summarizeFinance({ ...input, period: "6m", today: d("2026-09-10"), entries: [fuel("2026-03-31", 1000), fuel("2026-04-01", 2000)] });
+    expect(s.fuelCents).toBe(2000);
+  });
+});
+
 describe("periods", () => {
   const today = d("2026-11-02");
 
@@ -211,20 +244,27 @@ describe("labels", () => {
 });
 
 describe("record mapping", () => {
-  it("flattens maintenances and upgrades into entries", () => {
+  it("flattens maintenances, upgrades and fills into entries", () => {
     const xs = toFinanceEntries({
       id: "v9",
       maintenances: [{ date: d("2026-01-05"), costCents: 1000, category: "OIL", title: "Óleo" }],
       upgrades: [{ date: d("2026-02-05"), costCents: 2000, category: "ECU", name: "Remap" }],
+      fuelRecords: [{ date: d("2026-03-05"), costCents: 25000 }],
     });
     expect(xs).toEqual([
       { kind: "maintenance", date: d("2026-01-05"), costCents: 1000, category: "OIL", title: "Óleo", vehicleId: "v9" },
       { kind: "upgrade", date: d("2026-02-05"), costCents: 2000, category: "ECU", title: "Remap", vehicleId: "v9" },
+      { kind: "fuel", date: d("2026-03-05"), costCents: 25000, category: "FUEL", title: "Abastecimento", vehicleId: "v9" },
     ]);
   });
 
   it("takes the first logged km, or the current km without services", () => {
-    expect(firstLoggedKm({ currentKm: 90000, maintenances: [{ km: 85000 }, { km: 80000 }] })).toBe(80000);
-    expect(firstLoggedKm({ currentKm: 90000, maintenances: [] })).toBe(90000);
+    expect(firstLoggedKm({ currentKm: 90000, maintenances: [{ km: 85000 }, { km: 80000 }], fuelRecords: [] })).toBe(80000);
+    expect(firstLoggedKm({ currentKm: 90000, maintenances: [], fuelRecords: [] })).toBe(90000);
+  });
+
+  it("counts fills in the first logged km", () => {
+    expect(firstLoggedKm({ currentKm: 90000, maintenances: [{ km: 85000 }], fuelRecords: [{ km: 82000 }, { km: 88000 }] })).toBe(82000);
+    expect(firstLoggedKm({ currentKm: 90000, maintenances: [], fuelRecords: [{ km: 86000 }] })).toBe(86000);
   });
 });

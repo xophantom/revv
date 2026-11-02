@@ -9,8 +9,12 @@
   --color-fg: #ffffff;
   --color-muted: rgba(255, 255, 255, 0.55);
   --radius: 12px;
-  --font-display: var(--font-space), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jb), ui-monospace, monospace;
+  /* The device's own fonts: SF Pro / SF Mono on Apple, Segoe UI / Consolas on Windows, Roboto on Android. */
+  --font-display: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-display);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Roboto Mono", "Liberation Mono", monospace;
+  /* Numbers and captions use the same font with tabular figures (`tabular-nums`), as Apple's apps
+     do, rather than a monospace face: digits still line up in columns. */
 }
 
 :root {
@@ -21,7 +25,13 @@ html, body {
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased; /* light text on black reads thinner and crisper, like native apps */
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.mono { font-family: var(--font-mono); }
+@layer base {
+  /* SF Pro is drawn with tighter tracking at display sizes. */
+  h1 { letter-spacing: -0.02em; }
+}
+
 .glass { background: rgba(255,255,255,.03); backdrop-filter: blur(8px); border: 1px solid var(--color-border); }

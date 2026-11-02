@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -11,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge, STATUS_TONE } from "@/components/ui/status-badge";
 import { FinanceOverview } from "@/components/dashboard/FinanceOverview";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 type VehicleAlert = Alert & { vehicleId: string; vehicleName: string };
 
@@ -28,7 +31,13 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const vehicles = await db.vehicle.findMany({
     where: { userId: user.id },
-    include: { maintenances: true, upgrades: true, spec: true, customAlerts: true },
+    include: {
+      maintenances: true,
+      upgrades: true,
+      fuelRecords: { select: { date: true, km: true, costCents: true } }, // finance only
+      spec: true,
+      customAlerts: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -36,8 +45,8 @@ export default async function DashboardPage() {
     return (
       <div>
         <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
-        <p className="mono text-sm text-muted">
-          {"// garagem vazia — "}
+        <p className="tabular-nums text-sm text-muted">
+          {"Garagem vazia: "}
           <Link href="/garage" className="text-accent hover:underline">adicione um veículo</Link>
         </p>
       </div>
@@ -55,7 +64,7 @@ export default async function DashboardPage() {
       today,
       spec,
       maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleIds: m.specRuleIds })),
-      customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done })),
+      customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done, repeatMonths: c.repeatMonths, repeatKm: c.repeatKm })),
     };
     return computeAlerts(alertInput).map((a) => ({ ...a, vehicleId: v.id, vehicleName: v.name }));
   });
@@ -70,9 +79,9 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Dashboard</h1>
 
-      <Panel title="Alertas" action={urgent.length > 0 && <span className="mono text-[11px] text-muted">{alertCounts(urgent)}</span>}>
+      <Panel title="Alertas" action={urgent.length > 0 && <span className="tabular-nums text-[11px] text-muted">{alertCounts(urgent)}</span>}>
         {urgent.length === 0 ? (
-          <p className="mono text-sm text-muted">{missing.length ? "// nada atrasado ou próximo" : "// tudo em dia"}</p>
+          <p className="text-sm text-muted">{missing.length ? "Nada atrasado ou próximo" : "Tudo em dia"}</p>
         ) : (
           <ul className="grid gap-1 md:grid-cols-2">
             {urgent.map((a) => (
@@ -84,7 +93,7 @@ export default async function DashboardPage() {
                   <StatusBadge status={a.status} />
                   <span className="min-w-0 text-sm">
                     <span className="text-muted">{a.vehicleName}</span> · {a.label}
-                    <span className="mono ml-2 text-[11px] text-muted">{alertDetail(a)}</span>
+                    <span className="tabular-nums ml-2 text-[11px] text-muted">{alertDetail(a)}</span>
                   </span>
                 </Link>
               </li>
@@ -94,7 +103,7 @@ export default async function DashboardPage() {
 
         {missing.length > 0 && (
           <details className="group mt-3 border-t border-border pt-3">
-            <summary className="mono flex cursor-pointer list-none flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+            <summary className="tabular-nums flex cursor-pointer list-none flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
               <ChevronRight size={12} aria-hidden className="shrink-0 transition-transform group-open:rotate-90" />
               <span>Sem histórico · {missing.length}</span>
               <span className="text-muted/70">— registre o último serviço para acompanhar</span>
@@ -105,7 +114,7 @@ export default async function DashboardPage() {
                   <Link
                     href={alertHref(a)}
                     className={cn(
-                      "mono inline-flex max-w-full rounded-md border px-2 py-1 text-[11px] transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-accent",
+                      "tabular-nums inline-flex max-w-full rounded-md border px-2 py-1 text-[11px] transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-accent",
                       STATUS_TONE.unknown,
                     )}
                   >

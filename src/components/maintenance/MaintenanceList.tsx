@@ -20,7 +20,7 @@ export function MaintenanceList({ records, ...form }: MaintenanceFormProps & { r
         {records.length > 0 && <Filters value={filter} onChange={setFilter} />}
       </div>
       {filtered.length === 0 ? (
-        <p className="mono text-sm text-muted">{records.length ? "// nenhuma manutenção corresponde ao filtro" : "// nenhuma manutenção registrada"}</p>
+        <p className="text-sm text-muted">{records.length ? "Nenhuma manutenção corresponde ao filtro" : "Nenhuma manutenção registrada"}</p>
       ) : (
         <div className="grid gap-2">
           {filtered.map((r) => <MaintenanceRow key={r.id} record={r} form={form} />)}

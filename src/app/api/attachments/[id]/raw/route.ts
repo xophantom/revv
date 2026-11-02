@@ -2,7 +2,7 @@ import { type NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { streamPrivateBlob } from "@/lib/blob";
+import { CACHE_IMMUTABLE, streamPrivateBlob } from "@/lib/blob";
 
 export const runtime = "nodejs";
 
@@ -16,5 +16,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const att = await db.attachment.findUnique({ where: { id }, include: { vehicle: true } });
   if (!att || att.vehicle.userId !== session.user.id) return new NextResponse("Not found", { status: 404 });
 
-  return streamPrivateBlob(att.url, request.headers.get("if-none-match"));
+  // Edits only add or delete attachment rows, never repoint one, so an id always means the same bytes.
+  return streamPrivateBlob(att.url, request.headers.get("if-none-match"), CACHE_IMMUTABLE);
 }

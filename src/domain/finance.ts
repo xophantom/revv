@@ -1,18 +1,21 @@
 import type { MaintenanceCategory, UpgradeCategory } from "@prisma/client";
 import { formatDateOnly, monthsBetweenUTC } from "@/lib/dates";
 
+// Fuel is a single category of its own ("Combustível"), whatever the fuel type.
+export const FUEL_CATEGORY = "FUEL" as const;
+
 export type FinanceEntry = {
-  kind: "maintenance" | "upgrade";
+  kind: "maintenance" | "upgrade" | "fuel";
   date: Date; // UTC midnight
   costCents: number;
-  category: MaintenanceCategory | UpgradeCategory;
-  title: string; // maintenance title or upgrade name
+  category: MaintenanceCategory | UpgradeCategory | typeof FUEL_CATEGORY;
+  title: string; // maintenance title, upgrade name or "Abastecimento"
   vehicleId: string;
 };
 
 export type FinancePeriod = "6m" | "12m" | "year" | "all";
 
-// Distance driven per vehicle: odometer at the first logged service → current reading.
+// Distance driven per vehicle: odometer at the first logged service or fill → current reading.
 export type Odometer = { vehicleId: string; currentKm: number; firstKm: number };
 
 export type FinanceInput = {
@@ -28,6 +31,7 @@ export type CategoryTotal = Pick<FinanceEntry, "kind" | "category"> & { cents: n
 export type FinanceSummary = {
   maintenanceCents: number;
   upgradeCents: number;
+  fuelCents: number;
   totalCents: number;
   monthlyAvgCents: number; // total / months in byMonth
   costPerKmCents: number | null; // whole history, whatever the period
@@ -85,7 +89,7 @@ export function monthlySeries(entries: FinanceEntry[], from: Date, to: Date): Mo
   });
 }
 
-// Keyed by kind + category: both kinds have BRAKES, SUSPENSION and OTHER.
+// Keyed by kind + category: maintenance and upgrades both have BRAKES, SUSPENSION and OTHER.
 export function categoryTotals(entries: FinanceEntry[]): CategoryTotal[] {
   const totals = new Map<string, CategoryTotal>();
   for (const e of entries) {
@@ -125,7 +129,8 @@ export function summarizeFinance({ entries: all, odometers, today, period = "all
   const entries = filterByPeriod(all, period, today);
   const maintenanceCents = sum(entries.filter((e) => e.kind === "maintenance"));
   const upgradeCents = sum(entries.filter((e) => e.kind === "upgrade"));
-  const totalCents = maintenanceCents + upgradeCents;
+  const fuelCents = sum(entries.filter((e) => e.kind === "fuel"));
+  const totalCents = maintenanceCents + upgradeCents + fuelCents;
   // Span: period start (or the first expense, for the whole history) through today's month,
   // or the latest expense's if it's dated later.
   const times = entries.map((e) => e.date.getTime());
@@ -135,7 +140,7 @@ export function summarizeFinance({ entries: all, odometers, today, period = "all
   const byVehicle: Record<string, number> = {};
   for (const e of entries) byVehicle[e.vehicleId] = (byVehicle[e.vehicleId] ?? 0) + e.costCents;
   return {
-    maintenanceCents, upgradeCents, totalCents,
+    maintenanceCents, upgradeCents, fuelCents, totalCents,
     monthlyAvgCents: byMonth.length ? Math.round(totalCents / byMonth.length) : 0,
     costPerKmCents: costPerKmCents(all, odometers),
     maxExpense: maxExpense(entries),
@@ -150,14 +155,18 @@ export function toFinanceEntries(v: {
   id: string;
   maintenances: { date: Date; costCents: number; category: MaintenanceCategory; title: string }[];
   upgrades: { date: Date; costCents: number; category: UpgradeCategory; name: string }[];
+  fuelRecords: { date: Date; costCents: number }[];
 }): FinanceEntry[] {
   return [
     ...v.maintenances.map((m) => ({ kind: "maintenance" as const, date: m.date, costCents: m.costCents, category: m.category, title: m.title, vehicleId: v.id })),
     ...v.upgrades.map((u) => ({ kind: "upgrade" as const, date: u.date, costCents: u.costCents, category: u.category, title: u.name, vehicleId: v.id })),
+    ...v.fuelRecords.map((f) => ({ kind: "fuel" as const, date: f.date, costCents: f.costCents, category: FUEL_CATEGORY, title: "Abastecimento", vehicleId: v.id })),
   ];
 }
 
-// Odometer at the first logged service (upgrades carry no km); with no service, no distance is known.
-export function firstLoggedKm(v: { currentKm: number; maintenances: { km: number }[] }): number {
-  return v.maintenances.length ? Math.min(...v.maintenances.map((m) => m.km)) : v.currentKm;
+// Odometer at the first logged service or fill (upgrades carry no km); with neither, no distance is known.
+// Fills count because their spend is in the total: fuel logged since 50.000 km is spread over the km since then.
+export function firstLoggedKm(v: { currentKm: number; maintenances: { km: number }[]; fuelRecords: { km: number }[] }): number {
+  const kms = [...v.maintenances, ...v.fuelRecords].map((r) => r.km);
+  return kms.length ? Math.min(...kms) : v.currentKm;
 }

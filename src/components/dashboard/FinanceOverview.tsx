@@ -36,7 +36,7 @@ export function FinanceOverview({ vehicles, entries, today }: { vehicles: Financ
                 className="flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface2 focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <span className="min-w-0 truncate font-medium">{v.name}</span>
-                <span className={cn("mono shrink-0 text-sm tabular-nums", !v.cents && "text-muted")}>{centsToBRL(v.cents)}</span>
+                <span className={cn("shrink-0 text-sm tabular-nums", !v.cents && "text-muted")}>{centsToBRL(v.cents)}</span>
               </Link>
             </li>
           ))}
