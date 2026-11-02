@@ -2,8 +2,14 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Check, Pencil, Trash2 } from "lucide-react";
 import { toggleCustomAlertDone, deleteCustomAlert } from "@/actions/alerts";
+import type { AlertStatus } from "@/domain/alerts";
+import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateOnly } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import { CustomAlertForm } from "./CustomAlertForm";
 
 export type CustomAlertRecord = {
@@ -12,11 +18,14 @@ export type CustomAlertRecord = {
   dueKm: number | null;
   dueDate: string | null;
   done: boolean;
+  status?: AlertStatus; // computed state; absent once done
+  detail?: string;
 };
 
 function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [confirm, confirmDialog] = useConfirm();
 
   function onToggle() {
     startTransition(async () => {
@@ -26,8 +35,8 @@ function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: 
     });
   }
 
-  function onDelete() {
-    if (!window.confirm("Excluir este alerta?")) return;
+  async function onDelete() {
+    if (!(await confirm({ title: "Excluir este alerta?", description: alert.label }))) return;
     startTransition(async () => {
       const res = await deleteCustomAlert(alert.id);
       if (!res.ok) { toast.error(res.error); return; }
@@ -46,36 +55,36 @@ function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: 
         type="button"
         onClick={onToggle}
         disabled={pending}
+        aria-pressed={alert.done}
         aria-label={alert.done ? "Marcar como pendente" : "Marcar como concluído"}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition disabled:opacity-50 ${alert.done ? "border-accent bg-accent text-bg" : "border-border text-transparent hover:border-accent"}`}
+        className={cn(
+          "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition disabled:opacity-50",
+          alert.done ? "border-accent bg-accent text-bg" : "border-border text-transparent hover:border-accent hover:text-accent/60",
+        )}
       >
-        ✓
+        <Check size={14} strokeWidth={3} />
       </button>
       <div className="min-w-0 flex-1">
-        <span className={alert.done ? "text-muted line-through" : "font-medium"}>{alert.label}</span>
-        {hints.length > 0 && (
-          <div className="mono mt-0.5 text-xs text-muted">{hints.join(" · ")}</div>
-        )}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className={alert.done ? "text-muted line-through" : "font-medium"}>{alert.label}</span>
+          {!alert.done && alert.status && alert.status !== "ok" && <StatusBadge status={alert.status}>{alert.detail}</StatusBadge>}
+        </div>
+        {hints.length > 0 && <div className="mono mt-0.5 text-xs text-muted">{hints.join(" · ")}</div>}
       </div>
-      <CustomAlertForm vehicleId={vehicleId} alert={alert}
-        trigger={<button type="button" disabled={pending} className="mono shrink-0 text-[10px] text-muted transition hover:text-fg disabled:opacity-50">editar</button>} />
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={pending}
-        aria-label="Excluir alerta"
-        className="mono shrink-0 text-sm text-muted transition hover:text-accent disabled:opacity-50"
-      >
-        ✕
-      </button>
+      <div className="flex shrink-0">
+        <CustomAlertForm vehicleId={vehicleId} alert={alert}
+          trigger={<Button variant="ghost" size="icon" disabled={pending} aria-label="Editar alerta" title="Editar"><Pencil size={14} /></Button>} />
+        <Button variant="danger" size="icon" onClick={onDelete} disabled={pending} aria-label="Excluir alerta" title="Excluir"><Trash2 size={14} /></Button>
+      </div>
+      {confirmDialog}
     </div>
   );
 }
 
 export function CustomAlertList({ vehicleId, alerts }: { vehicleId: string; alerts: CustomAlertRecord[] }) {
-  if (!alerts.length) return null;
+  if (!alerts.length) return <p className="mono text-xs text-muted">{"// nenhum alerta: use para IPVA, licenciamento, seguro ou o que não está na ficha"}</p>;
   return (
-    <div className="mt-3 grid gap-2">
+    <div className="grid gap-2">
       {alerts.map((a) => <AlertItem key={a.id} alert={a} vehicleId={vehicleId} />)}
     </div>
   );

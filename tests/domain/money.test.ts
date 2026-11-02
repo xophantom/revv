@@ -34,7 +34,7 @@ describe("money", () => {
     expect(realToCents("R$ 1.290,90")).toBe(129090);
   });
   it("round-trips cents through the edit field", () => {
-    expect(centsToInput(150050)).toBe("1500,50");
+    expect(centsToInput(150050)).toBe("1.500,50");
     expect(centsToInput(8990)).toBe("89,90");
     expect(centsToInput(0)).toBe("");
     for (const c of [1, 99, 150050, 12345678]) expect(realToCents(centsToInput(c))).toBe(c);

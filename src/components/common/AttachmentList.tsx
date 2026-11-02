@@ -1,4 +1,5 @@
 "use client";
+import { FileText } from "lucide-react";
 import { useUi } from "@/store/ui";
 
 type Att = { id: string; kind: "image" | "pdf"; url: string; fileName: string; caption?: string | null };
@@ -28,7 +29,7 @@ export function AttachmentList({ attachments }: { attachments: Att[] }) {
           rel="noreferrer"
           className="mono flex items-center gap-1 text-xs text-muted transition hover:text-accent"
         >
-          <span>📄</span>
+          <FileText size={13} aria-hidden className="shrink-0" />
           {a.fileName}
         </a>
       ))}

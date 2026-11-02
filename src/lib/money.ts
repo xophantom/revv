@@ -25,7 +25,13 @@ export function realToCents(input: string): number {
 export function centsToBRL(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
-// Cents back to what the cost field accepts ("1500,50"); zero stays empty so the placeholder shows.
+const inputFormat = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Cents back to what the cost field accepts ("1.500,50"); zero stays empty so the placeholder shows.
 export function centsToInput(cents: number): string {
-  return cents ? (cents / 100).toFixed(2).replace(".", ",") : "";
+  return cents ? inputFormat.format(cents / 100) : "";
+}
+// Short BRL for chart axes ("R$ 1,5 mil").
+const compactFormat = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: "compact", minimumFractionDigits: 0, maximumFractionDigits: 1 });
+export function centsToCompactBRL(cents: number): string {
+  return compactFormat.format(cents / 100);
 }

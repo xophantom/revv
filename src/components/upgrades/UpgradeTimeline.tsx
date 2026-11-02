@@ -3,14 +3,18 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { UpgradeCategory } from "@prisma/client";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteUpgrade } from "@/actions/upgrades";
 import { AnimatedCard } from "@/components/common/AnimatedCard";
+import { CategoryBadge } from "@/components/common/CategoryBadge";
 import { Money } from "@/components/common/Money";
 import { UpgradeForm } from "./UpgradeForm";
 import { UPGRADE_LABELS } from "@/lib/categories";
+import { UPGRADE_ICONS } from "@/lib/category-icons";
 import { formatDateOnly } from "@/lib/dates";
 import { useUi } from "@/store/ui";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm";
 
 type Att = { id: string; kind: "image" | "pdf"; url: string; fileName: string; caption?: string | null };
 export type Serialized = {
@@ -27,12 +31,13 @@ export type Serialized = {
 function UpgradeNode({ u, i, vehicleId }: { u: Serialized; i: number; vehicleId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [confirm, confirmDialog] = useConfirm();
   const images = u.attachments.filter((a) => a.kind === "image");
   const lightboxImages = images.map((a) => ({ url: a.url, caption: a.caption }));
   const dateLabel = formatDateOnly(u.date, "dd MMM yyyy").toUpperCase();
 
-  function onDelete() {
-    if (!window.confirm("Excluir este upgrade?")) return;
+  async function onDelete() {
+    if (!(await confirm({ title: "Excluir este upgrade?", description: `${u.name}. Os anexos também serão apagados.` }))) return;
     startTransition(async () => {
       const res = await deleteUpgrade(u.id);
       if (!res.ok) { toast.error(res.error); return; }
@@ -49,7 +54,7 @@ function UpgradeNode({ u, i, vehicleId }: { u: Serialized; i: number; vehicleId:
           <div className="mono text-xs text-muted">{dateLabel}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
             <span className="font-bold">{u.name}</span>
-            <span className="mono rounded border border-border px-1.5 py-0.5 text-[10px] text-muted">{UPGRADE_LABELS[u.category]}</span>
+            <CategoryBadge icon={UPGRADE_ICONS[u.category]} label={UPGRADE_LABELS[u.category]} />
           </div>
           {u.supplier && <div className="mono mt-0.5 text-xs text-muted">{u.supplier}</div>}
           {u.notes && <p className="mt-1 text-xs text-muted">{u.notes}</p>}
@@ -68,22 +73,16 @@ function UpgradeNode({ u, i, vehicleId }: { u: Serialized; i: number; vehicleId:
             </div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-1">
           <Money cents={u.costCents} className="mono font-bold text-accent" />
-          <div className="flex gap-3">
+          <div className="-mr-1.5 flex">
             <UpgradeForm vehicleId={vehicleId} upgrade={u}
-              trigger={<button type="button" disabled={pending} className="mono text-[10px] text-muted transition hover:text-fg disabled:opacity-50">editar</button>} />
-            <button
-              type="button"
-              onClick={onDelete}
-              disabled={pending}
-              className="mono text-[10px] text-muted transition hover:text-accent disabled:opacity-50"
-            >
-              excluir
-            </button>
+              trigger={<Button variant="ghost" size="icon" disabled={pending} aria-label="Editar upgrade" title="Editar"><Pencil size={14} /></Button>} />
+            <Button variant="danger" size="icon" onClick={onDelete} disabled={pending} aria-label="Excluir upgrade" title="Excluir"><Trash2 size={14} /></Button>
           </div>
         </div>
       </div>
+      {confirmDialog}
     </AnimatedCard>
   );
 }
@@ -92,10 +91,10 @@ export function UpgradeTimeline({ vehicleId, upgrades }: { vehicleId: string; up
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <UpgradeForm vehicleId={vehicleId} trigger={<Button className="bg-accent text-bg">+ Upgrade</Button>} />
+        <UpgradeForm vehicleId={vehicleId} trigger={<Button><Plus size={16} /> Upgrade</Button>} />
       </div>
       {upgrades.length === 0 ? (
-        <p className="mono text-sm text-muted">// nenhum upgrade registrado</p>
+        <p className="mono text-sm text-muted">{"// nenhum upgrade registrado"}</p>
       ) : (
         <div className="relative grid gap-4 before:absolute before:bottom-2 before:left-[10px] before:top-2 before:w-px before:bg-border">
           {upgrades.map((u, i) => <UpgradeNode key={u.id} u={u} i={i} vehicleId={vehicleId} />)}

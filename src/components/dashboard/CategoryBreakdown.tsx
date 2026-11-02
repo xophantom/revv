@@ -1,44 +1,82 @@
-"use client";
-import { Bar, BarChart, Cell, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { MaintenanceCategory, UpgradeCategory } from "@prisma/client";
+import { Panel } from "@/components/ui/panel";
+import type { CategoryTotal, FinanceSummary } from "@/domain/finance";
+import { MAINTENANCE_LABELS, UPGRADE_LABELS } from "@/lib/categories";
+import { MAINTENANCE_ICONS, UPGRADE_ICONS } from "@/lib/category-icons";
 import { centsToBRL } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
-type Props = { maintenanceCents: number; upgradeCents: number };
+// Maintenance in accent, upgrades in a neutral tone; the UPG tag tells them apart without color.
+const BAR = { maintenance: "bg-accent", upgrade: "bg-fg/70" } as const;
+const ICON = { maintenance: "text-accent", upgrade: "text-fg/70" } as const;
 
-const GRID = "rgba(255,255,255,.08)";
-const TICK = { fill: "rgba(255,255,255,.55)", fontSize: 11 };
-const COLORS = ["#ff6a00", "#6b7280"];
+function categoryMeta({ kind, category }: CategoryTotal) {
+  const meta = kind === "maintenance"
+    ? { label: MAINTENANCE_LABELS[category as MaintenanceCategory], Icon: MAINTENANCE_ICONS[category as MaintenanceCategory] }
+    : { label: UPGRADE_LABELS[category as UpgradeCategory], Icon: UPGRADE_ICONS[category as UpgradeCategory] };
+  return { label: meta.label ?? category, Icon: meta.Icon ?? MAINTENANCE_ICONS.OTHER };
+}
 
-function TooltipContent({ active, payload }: { active?: boolean; payload?: { value: number; payload: { name: string } }[] }) {
-  if (!active || !payload?.length) return null;
+function share(cents: number, total: number): string {
+  if (!total || !cents) return "0%";
+  const pct = Math.round((cents / total) * 100);
+  return pct < 1 ? "<1%" : `${pct}%`;
+}
+
+function Legend({ kind, label, cents, total }: { kind: CategoryTotal["kind"]; label: string; cents: number; total: number }) {
   return (
-    <div className="mono rounded-md border border-border bg-surface2 px-3 py-2 text-xs">
-      <div className="text-muted">{payload[0].payload.name}</div>
-      <div className="font-bold text-accent">{centsToBRL(payload[0].value * 100)}</div>
-    </div>
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden className={cn("h-2 w-2 rounded-sm", BAR[kind])} />
+      {label}
+      <span className="text-fg tabular-nums">{centsToBRL(cents)}</span>
+      <span className="tabular-nums">{share(cents, total)}</span>
+    </span>
   );
 }
 
-export function CategoryBreakdown({ maintenanceCents, upgradeCents }: Props) {
-  const data = [
-    { name: "Manutenções", reais: maintenanceCents / 100 },
-    { name: "Upgrades", reais: upgradeCents / 100 },
-  ];
+type Props = Pick<FinanceSummary, "byCategory" | "maintenanceCents" | "upgradeCents" | "totalCents"> & { emptyLabel: string };
+
+export function CategoryBreakdown({ byCategory, maintenanceCents, upgradeCents, totalCents, emptyLabel }: Props) {
+  const max = byCategory[0]?.cents ?? 0;
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="mono mb-3 text-[11px] uppercase tracking-wider text-muted">Manutenções vs Upgrades</div>
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="name" tick={TICK} stroke={GRID} tickLine={false} />
-          <YAxis tick={TICK} stroke={GRID} tickLine={false} width={48} />
-          <Tooltip content={<TooltipContent />} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-          <Bar dataKey="reais" radius={[4, 4, 0, 0]}>
-            {data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <Panel title="Por categoria" className="min-w-0">
+      {!byCategory.length ? (
+        <p className="mono text-sm text-muted">{emptyLabel}</p>
+      ) : (
+        <>
+          <div className="mono mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
+            <Legend kind="maintenance" label="Manutenção" cents={maintenanceCents} total={totalCents} />
+            <Legend kind="upgrade" label="Upgrade" cents={upgradeCents} total={totalCents} />
+          </div>
+          <ul className="space-y-3">
+            {byCategory.map((c) => {
+              const { label, Icon } = categoryMeta(c);
+              return (
+                <li key={`${c.kind}:${c.category}`}>
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Icon size={14} aria-hidden className={cn("shrink-0", ICON[c.kind])} />
+                      <span className="truncate">{label}</span>
+                      {c.kind === "upgrade" && (
+                        <span className="mono shrink-0 rounded border border-border px-1 text-[11px] leading-4 text-muted">
+                          <span aria-hidden>UPG</span>
+                          <span className="sr-only">upgrade</span>
+                        </span>
+                      )}
+                    </span>
+                    <span className="mono shrink-0 tabular-nums">
+                      {centsToBRL(c.cents)} <span className="text-[11px] text-muted">{share(c.cents, totalCents)}</span>
+                    </span>
+                  </div>
+                  <div aria-hidden className="mt-1.5 h-1.5 rounded-full bg-white/[.06]">
+                    <div className={cn("h-full rounded-full", BAR[c.kind])} style={{ width: `${(c.cents / max) * 100}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </Panel>
   );
 }

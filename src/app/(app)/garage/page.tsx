@@ -13,7 +13,7 @@ export default async function GaragePage() {
         <VehicleForm />
       </div>
       {vehicles.length === 0 ? (
-        <p className="mono text-sm text-muted">// nenhum veículo ainda — adicione o primeiro</p>
+        <p className="mono text-sm text-muted">{"// nenhum veículo ainda: adicione o primeiro"}</p>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {vehicles.map((v, i) => <VehicleCard key={v.id} v={v} i={i} />)}
