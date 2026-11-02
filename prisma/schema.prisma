@@ -7,9 +7,9 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String?
-  email          String?   @unique
+  email          String?      @unique
   emailVerified  DateTime?
   image          String?
   accounts       Account[]
@@ -17,6 +17,8 @@ model User {
   vehicles       Vehicle[]
   alertDigestAt  DateTime? // last alert e-mail sent
   alertDigestKey String? // which alerts it listed, so an unchanged list isn't re-sent daily
+  oauthCodes     OAuthCode[]
+  oauthGrants    OAuthGrant[]
 }
 
 model Account {
@@ -208,4 +210,84 @@ model FuelRecord {
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId, date])
+}
+
+// OAuth 2.1 authorization server for the MCP endpoint (Claude connects through it).
+
+enum OAuthClientKind {
+  DCR // registered through /api/oauth/register
+  CIMD // client_id is an HTTPS URL serving the client's metadata
+}
+
+model OAuthClient {
+  id           String          @id // the public client_id: issued here (DCR) or the metadata URL (CIMD)
+  kind         OAuthClientKind
+  name         String? // self-declared, never verified
+  redirectUris String[]
+  fetchedAt    DateTime? // CIMD: refetched once it is a day old
+  authorizedAt DateTime? // first consent; clients never authorized are purged after a day (registration is open)
+  createdAt    DateTime        @default(now())
+  codes        OAuthCode[]
+  grants       OAuthGrant[]
+
+  @@index([kind, createdAt])
+}
+
+model OAuthCode {
+  id            String      @id @default(cuid())
+  codeHash      String      @unique // SHA-256 of the code; the code itself is never stored
+  clientId      String
+  userId        String
+  redirectUri   String
+  codeChallenge String // PKCE S256
+  scopes        String[]
+  resource      String?
+  expiresAt     DateTime
+  usedAt        DateTime? // single use: a replay revokes the grant it produced
+  grantId       String?
+  createdAt     DateTime    @default(now())
+  client        OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grant         OAuthGrant? @relation(fields: [grantId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
+}
+
+// One connection the user approved. Revoking it (or detecting a reused refresh token) deletes it with its tokens.
+model OAuthGrant {
+  id         String       @id @default(cuid())
+  userId     String
+  clientId   String
+  scopes     String[]
+  resource   String?
+  expiresAt  DateTime // expiry of the newest refresh token: past it the connection is gone
+  lastUsedAt DateTime? // throttled, written at most once a minute
+  createdAt  DateTime     @default(now())
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client     OAuthClient  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tokens     OAuthToken[]
+  codes      OAuthCode[]
+
+  @@index([userId])
+  @@index([clientId])
+  @@index([expiresAt])
+}
+
+enum OAuthTokenKind {
+  ACCESS
+  REFRESH
+}
+
+model OAuthToken {
+  id        String         @id @default(cuid())
+  grantId   String
+  kind      OAuthTokenKind
+  tokenHash String         @unique // SHA-256 of the token; the token itself is never stored
+  expiresAt DateTime
+  rotatedAt DateTime? // refresh tokens: set when exchanged; presenting it again revokes the grant
+  createdAt DateTime       @default(now())
+  grant     OAuthGrant     @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId])
+  @@index([expiresAt])
 }
