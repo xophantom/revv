@@ -1,5 +1,5 @@
 import { addMonthsUTC, daysBetween } from "@/lib/dates";
-import { DAYS_SOON, KM_SOON, type Alert } from "./alerts";
+import { soonDays, soonKm, type Alert } from "./alerts";
 import type { VehicleSpecData } from "./spec-schema";
 
 // One dimension of a service interval, drawn as a progress bar.
@@ -24,8 +24,9 @@ export type TelemetryItem = {
 
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
-function gauge(dim: Gauge["dim"], total: number, remaining: number, soon: number): Gauge | null {
+function gauge(dim: Gauge["dim"], total: number, remaining: number): Gauge | null {
   if (!(total > 0)) return null;
+  const soon = dim === "km" ? soonKm(total) : soonDays(total);
   return { dim, total, remaining, fraction: clamp((total - remaining) / total), soonAt: clamp(1 - soon / total) };
 }
 
@@ -33,11 +34,11 @@ function gauge(dim: Gauge["dim"], total: number, remaining: number, soon: number
 export function gaugeFor(a: Alert): Gauge | null {
   const out: Gauge[] = [];
   if (a.intervalKm && a.remainingKm != null) {
-    const g = gauge("km", a.intervalKm, a.remainingKm, KM_SOON);
+    const g = gauge("km", a.intervalKm, a.remainingKm);
     if (g) out.push(g);
   }
   if (a.intervalMonths && a.lastDate && a.remainingDays != null) {
-    const g = gauge("time", daysBetween(a.lastDate, addMonthsUTC(a.lastDate, a.intervalMonths)), a.remainingDays, DAYS_SOON);
+    const g = gauge("time", daysBetween(a.lastDate, addMonthsUTC(a.lastDate, a.intervalMonths)), a.remainingDays);
     if (g) out.push(g);
   }
   const driven = a.status !== "ok" && a.driver ? out.find((g) => g.dim === a.driver) : undefined;

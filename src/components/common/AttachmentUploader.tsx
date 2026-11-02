@@ -7,6 +7,83 @@ import { cn } from "@/lib/utils";
 
 export type Uploaded = { url: string; key: string; fileName: string; mime: string; size: number };
 
+// Phone photos run 3–12 MB, yet the app never shows them larger than the lightbox. Capping the
+// long edge and re-encoding cuts the upload and every later download of the file.
+const MAX_EDGE = 2048;
+const QUALITY = 0.85;
+// Anything else goes up untouched: PDFs, GIFs (animation), SVGs (vector), formats a browser may not decode.
+const RESIZABLE = new Set(["image/jpeg", "image/png", "image/webp"]);
+const EXTENSION: Record<string, string> = { "image/webp": "webp", "image/jpeg": "jpg" };
+
+let webpEncodable: boolean | undefined;
+// Safari's canvas can't encode WebP and silently hands back a PNG instead.
+function canEncodeWebp(): boolean {
+  if (webpEncodable === undefined) {
+    const probe = document.createElement("canvas");
+    probe.width = probe.height = 1;
+    webpEncodable = probe.toDataURL("image/webp").startsWith("data:image/webp");
+  }
+  return webpEncodable;
+}
+
+type Decoded = { source: CanvasImageSource; width: number; height: number; release: () => void };
+
+// Both paths apply the EXIF rotation, so phone photos don't come out sideways.
+async function decodeImage(file: File): Promise<Decoded> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    return { source: bitmap, width: bitmap.width, height: bitmap.height, release: () => bitmap.close() };
+  } catch {
+    // Older Safari rejects the option; an <img> honors EXIF and drawImage keeps it.
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.src = url;
+    try {
+      await img.decode();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    return { source: img, width: img.naturalWidth, height: img.naturalHeight, release: () => {} };
+  }
+}
+
+function renamed(file: File, type: string): string {
+  if (file.type === type) return file.name;
+  const dot = file.name.lastIndexOf(".");
+  return `${dot > 0 ? file.name.slice(0, dot) : file.name}.${EXTENSION[type]}`;
+}
+
+// A downscaled re-encode of the image, or the original file whenever that wouldn't be smaller.
+async function shrinkImage(file: File): Promise<File> {
+  if (!RESIZABLE.has(file.type)) return file;
+  let decoded: Decoded | undefined;
+  const canvas = document.createElement("canvas");
+  try {
+    decoded = await decodeImage(file);
+    if (!decoded.width || !decoded.height) return file;
+    const scale = Math.min(1, MAX_EDGE / Math.max(decoded.width, decoded.height));
+    canvas.width = Math.max(1, Math.round(decoded.width * scale));
+    canvas.height = Math.max(1, Math.round(decoded.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    const type = canEncodeWebp() ? "image/webp" : "image/jpeg";
+    if (type === "image/jpeg") {
+      ctx.fillStyle = "#fff"; // no alpha in JPEG: transparent PNG areas would turn black
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, QUALITY));
+    if (!blob || blob.type !== type || blob.size >= file.size) return file;
+    return new File([blob], renamed(file, type), { type, lastModified: file.lastModified });
+  } catch {
+    return file; // this browser can't decode it: upload the original, as before
+  } finally {
+    decoded?.release();
+    canvas.width = canvas.height = 0; // iOS caps total canvas memory; free it before the next file
+  }
+}
+
 export function AttachmentUploader({ onUploaded, onBusyChange, disabled = false, label = "Anexar fotos/PDF", accept = "image/*,application/pdf", multiple = true }: {
   onUploaded: (files: Uploaded[]) => void;
   onBusyChange?: (busy: boolean) => void;
@@ -30,7 +107,8 @@ export function AttachmentUploader({ onUploaded, onBusyChange, disabled = false,
     onBusyChange?.(true);
     try {
       const uploaded: Uploaded[] = [];
-      for (const file of files) {
+      for (const original of files) {
+        const file = await shrinkImage(original);
         // Browser → Vercel Blob directly (bypasses the serverless body limit).
         // The token route adds a random suffix, so same-named files don't collide.
         const blob = await upload(file.name, file, { access: "private", handleUploadUrl: "/api/blob/upload" });

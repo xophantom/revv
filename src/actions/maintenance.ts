@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { ok, fail, type ActionResult } from "@/lib/result";
+import { odometerJumpError } from "@/lib/odometer";
 import { attachmentInput, attachmentRows } from "@/lib/attachments";
 import { deleteBlobs } from "@/lib/blob";
 
@@ -40,6 +41,8 @@ export async function createMaintenance(vehicleId: string, raw: unknown): Promis
   const parsed = input.safeParse(raw);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const { attachments, ...rest } = parsed.data;
+  const jump = odometerJumpError(v.currentKm, rest.km);
+  if (jump) return fail(jump);
   const [rec, bumped] = await db.$transaction([
     db.maintenanceRecord.create({ data: { ...rest, vehicleId, attachments: { create: attachmentRows(attachments, vehicleId) } } }),
     bumpOdometer(vehicleId, rest.km),
@@ -55,6 +58,8 @@ export async function updateMaintenance(id: string, raw: unknown): Promise<Actio
   const parsed = updateInput.safeParse(raw);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const { attachments, removeAttachmentIds, ...rest } = parsed.data;
+  const jump = odometerJumpError(rec.vehicle.currentKm, rest.km);
+  if (jump) return fail(jump);
   const removed = rec.attachments.filter((a) => removeAttachmentIds.includes(a.id));
   const [, bumped] = await db.$transaction([
     db.maintenanceRecord.update({

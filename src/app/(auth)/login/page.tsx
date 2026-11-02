@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn, auth, magicLinkEnabled } from "@/auth";
 import { SubmitButton } from "./SubmitButton";
+
+export const metadata: Metadata = { title: "Entrar" };
 
 const ERRORS: Record<string, string> = {
   Verification: "Esse link expirou ou já foi usado. Peça um novo abaixo.",

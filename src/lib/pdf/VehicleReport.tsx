@@ -1,6 +1,7 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import type { Vehicle, VehicleSpec, MaintenanceRecord, Upgrade } from "@prisma/client";
+import type { Vehicle, VehicleSpec, MaintenanceRecord, Upgrade, FuelRecord } from "@prisma/client";
 import { vehicleSpecSchema, emptySpec, type VehicleSpecData } from "@/domain/spec-schema";
+import { formatKmPerLiter, formatLiters, summarizeFuel, type FuelSummary } from "@/domain/fuel";
 import { MAINTENANCE_LABELS, UPGRADE_LABELS } from "@/lib/categories";
 import { centsToBRL } from "@/lib/money";
 import { formatDateOnly } from "@/lib/dates";
@@ -76,10 +77,25 @@ function specSummary(spec: VehicleSpecData): { label: string; value: string }[] 
   return out;
 }
 
+// Fuel as totals and consumption, not a table: fills are frequent and would fill pages.
+function fuelSummaryItems(fuel: FuelSummary): { label: string; value: string }[] {
+  const readings = fuel.records.filter((r) => r.kmPerLiter != null).length;
+  return [
+    { label: "Abastecimentos", value: String(fuel.fills) },
+    { label: "Litros", value: formatLiters(fuel.totalLiters) },
+    { label: "Gasto", value: centsToBRL(fuel.totalCents) },
+    { label: "Preço médio", value: fuel.avgPricePerLiterCents == null ? "—" : `${centsToBRL(fuel.avgPricePerLiterCents)}/L` },
+    { label: "Consumo médio", value: fuel.avgKmPerLiter == null ? "—" : `${formatKmPerLiter(fuel.avgKmPerLiter)} (${readings} ${readings === 1 ? "medição" : "medições"})` },
+    { label: "Último consumo", value: fuel.lastKmPerLiter == null ? "—" : formatKmPerLiter(fuel.lastKmPerLiter) },
+    { label: "Custo por km", value: fuel.costPerKmCents == null ? "—" : centsToBRL(fuel.costPerKmCents) },
+  ];
+}
+
 export type VehicleReportData = Vehicle & {
   spec: VehicleSpec | null;
   maintenances: MaintenanceRecord[];
   upgrades: Upgrade[];
+  fuelRecords: FuelRecord[];
 };
 
 export function VehicleReport({ vehicle }: { vehicle: VehicleReportData }) {
@@ -93,7 +109,8 @@ export function VehicleReport({ vehicle }: { vehicle: VehicleReportData }) {
 
   const maintTotal = vehicle.maintenances.reduce((s, m) => s + m.costCents, 0);
   const upgTotal = vehicle.upgrades.reduce((s, u) => s + u.costCents, 0);
-  const grandTotal = maintTotal + upgTotal;
+  const fuel = summarizeFuel(vehicle.fuelRecords);
+  const grandTotal = maintTotal + upgTotal + fuel.totalCents;
 
   const subtitle = [vehicle.plate ?? "—", vehicle.year ?? "—", vehicle.engine ?? "—"].join(" · ");
 
@@ -181,6 +198,22 @@ export function VehicleReport({ vehicle }: { vehicle: VehicleReportData }) {
           )}
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Combustível ({vehicle.fuelRecords.length})</Text>
+          {vehicle.fuelRecords.length === 0 ? (
+            <Text style={styles.empty}>Nenhum abastecimento registrado</Text>
+          ) : (
+            <View style={styles.specGrid}>
+              {fuelSummaryItems(fuel).map((it) => (
+                <View key={it.label} style={styles.specItem}>
+                  <Text style={styles.specLabel}>{it.label}:</Text>
+                  <Text style={styles.specValue}>{it.value}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
         <View style={styles.footer}>
           <View style={styles.footerRow}>
             <Text style={styles.footerLabel}>Total manutenções</Text>
@@ -189,6 +222,10 @@ export function VehicleReport({ vehicle }: { vehicle: VehicleReportData }) {
           <View style={styles.footerRow}>
             <Text style={styles.footerLabel}>Total upgrades</Text>
             <Text style={styles.footerValue}>{centsToBRL(upgTotal)}</Text>
+          </View>
+          <View style={styles.footerRow}>
+            <Text style={styles.footerLabel}>Total combustível</Text>
+            <Text style={styles.footerValue}>{centsToBRL(fuel.totalCents)}</Text>
           </View>
           <View style={styles.footerRow}>
             <Text style={styles.footerLabel}>Total geral</Text>

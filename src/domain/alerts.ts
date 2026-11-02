@@ -2,8 +2,16 @@ import type { MaintenanceCategory } from "@prisma/client";
 import type { VehicleSpecData } from "./spec-schema";
 import { addMonthsUTC, daysBetween } from "@/lib/dates";
 
+// Fixed "soon" window for custom alerts, which have a due point but no interval.
 export const KM_SOON = 1500;
 export const DAYS_SOON = 30;
+
+// Spec rules warn at a share of their interval: a fixed 1.500 km is 15% of an oil change but
+// 2,5% of a timing belt. Bounded so short intervals still warn and long ones don't nag for months.
+const SOON_SHARE = 0.15;
+const bound = (n: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(n)));
+export const soonKm = (intervalKm: number) => bound(intervalKm * SOON_SHARE, 500, 3000);
+export const soonDays = (intervalDays: number) => bound(intervalDays * SOON_SHARE, 7, 45);
 
 export type AlertStatus = "overdue" | "unknown" | "soon" | "ok";
 export type AlertDriver = "km" | "time" | null;
@@ -39,7 +47,15 @@ export type MaintenanceLite = {
   specRuleIds: string[]; // spec rules this record serviced; disambiguates shared categories
 };
 
-export type CustomAlertLite = { id: string; label: string; dueKm: number | null; dueDate: Date | null; done: boolean };
+export type CustomAlertLite = {
+  id: string;
+  label: string;
+  dueKm: number | null;
+  dueDate: Date | null;
+  done: boolean;
+  repeatMonths?: number | null; // a recurring alert warns at a share of its period, like spec rules
+  repeatKm?: number | null;
+};
 
 export type AlertInput = {
   currentKm: number;
@@ -123,15 +139,16 @@ export function computeAlerts(input: AlertInput): Alert[] {
       const baseKm = last?.km ?? rule.baselineKm;
       if (baseKm != null) {
         remainingKm = rule.intervalKm - (input.currentKm - baseKm);
-        dims.push({ status: classifyDim(remainingKm, KM_SOON), dim: "km" });
+        dims.push({ status: classifyDim(remainingKm, soonKm(rule.intervalKm)), dim: "km" });
       } else {
         dims.push({ status: "unknown", dim: "km" }); // no service logged and no explicit baseline
       }
     }
     if (rule.intervalMonths) {
       if (last?.date) {
-        remainingDays = daysBetween(input.today, addMonthsUTC(last.date, rule.intervalMonths));
-        dims.push({ status: classifyDim(remainingDays, DAYS_SOON), dim: "time" });
+        const due = addMonthsUTC(last.date, rule.intervalMonths);
+        remainingDays = daysBetween(input.today, due);
+        dims.push({ status: classifyDim(remainingDays, soonDays(daysBetween(last.date, due))), dim: "time" });
       } else {
         dims.push({ status: "unknown", dim: "time" });
       }
@@ -150,8 +167,11 @@ export function computeAlerts(input: AlertInput): Alert[] {
     const remainingKm = c.dueKm != null ? c.dueKm - input.currentKm : null;
     const remainingDays = c.dueDate != null ? daysBetween(input.today, c.dueDate) : null;
     const dims: Dim[] = [];
-    if (remainingKm != null) dims.push({ status: classifyDim(remainingKm, KM_SOON), dim: "km" });
-    if (remainingDays != null) dims.push({ status: classifyDim(remainingDays, DAYS_SOON), dim: "time" });
+    // A fixed 30 days would keep a monthly alert "soon" from the moment it's rescheduled.
+    const kmWindow = c.repeatKm ? soonKm(c.repeatKm) : KM_SOON;
+    const dayWindow = c.repeatMonths ? soonDays(Math.round(c.repeatMonths * 30.44)) : DAYS_SOON;
+    if (remainingKm != null) dims.push({ status: classifyDim(remainingKm, kmWindow), dim: "km" });
+    if (remainingDays != null) dims.push({ status: classifyDim(remainingDays, dayWindow), dim: "time" });
     const { status, driver } = combine(dims);
     alerts.push({
       id: c.id, label: c.label, status, remainingKm, remainingDays, driver, source: "custom",

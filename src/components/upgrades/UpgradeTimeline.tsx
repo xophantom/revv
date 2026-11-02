@@ -7,6 +7,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteUpgrade } from "@/actions/upgrades";
 import { AnimatedCard } from "@/components/common/AnimatedCard";
 import { CategoryBadge } from "@/components/common/CategoryBadge";
+import { Thumb } from "@/components/gallery/Thumb";
 import { Money } from "@/components/common/Money";
 import { UpgradeForm } from "./UpgradeForm";
 import { UPGRADE_LABELS } from "@/lib/categories";
@@ -61,13 +62,12 @@ function UpgradeNode({ u, i, vehicleId }: { u: Serialized; i: number; vehicleId:
           {images.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {images.map((a, idx) => (
-                <button
+                <Thumb
                   key={a.id}
-                  type="button"
-                  aria-label={a.caption ?? a.fileName}
+                  src={a.url}
+                  label={a.caption ?? a.fileName}
                   onClick={() => useUi.getState().openLightbox(lightboxImages, idx)}
-                  className="h-14 w-14 rounded-md border border-border bg-surface2 bg-cover bg-center transition hover:border-accent"
-                  style={{ backgroundImage: `url(${a.url})` }}
+                  className="h-14 w-14 rounded-md hover:border-accent"
                 />
               ))}
             </div>

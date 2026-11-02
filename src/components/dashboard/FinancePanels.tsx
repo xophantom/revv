@@ -15,6 +15,7 @@ export function FinancePanels({ summary, period }: { summary: FinanceSummary; pe
           byCategory={summary.byCategory}
           maintenanceCents={summary.maintenanceCents}
           upgradeCents={summary.upgradeCents}
+          fuelCents={summary.fuelCents}
           totalCents={summary.totalCents}
           emptyLabel={emptyLabel}
         />

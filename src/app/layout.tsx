@@ -5,7 +5,10 @@ import "./globals.css";
 const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-space", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jb", display: "swap" });
 
-export const metadata: Metadata = { title: "Revv", description: "Vehicle maintenance & upgrade tracker" };
+export const metadata: Metadata = {
+  title: { default: "Revv", template: "%s · Revv" },
+  description: "Manutenções, upgrades, abastecimentos e gastos dos seus veículos em um só lugar.",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

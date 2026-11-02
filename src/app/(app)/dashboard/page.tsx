@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -11,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge, STATUS_TONE } from "@/components/ui/status-badge";
 import { FinanceOverview } from "@/components/dashboard/FinanceOverview";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 type VehicleAlert = Alert & { vehicleId: string; vehicleName: string };
 
@@ -28,7 +31,13 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const vehicles = await db.vehicle.findMany({
     where: { userId: user.id },
-    include: { maintenances: true, upgrades: true, spec: true, customAlerts: true },
+    include: {
+      maintenances: true,
+      upgrades: true,
+      fuelRecords: { select: { date: true, km: true, costCents: true } }, // finance only
+      spec: true,
+      customAlerts: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -55,7 +64,7 @@ export default async function DashboardPage() {
       today,
       spec,
       maintenances: v.maintenances.map((m) => ({ category: m.category, date: m.date, km: m.km, specRuleIds: m.specRuleIds })),
-      customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done })),
+      customAlerts: v.customAlerts.map((c) => ({ id: c.id, label: c.label, dueKm: c.dueKm, dueDate: c.dueDate, done: c.done, repeatMonths: c.repeatMonths, repeatKm: c.repeatKm })),
     };
     return computeAlerts(alertInput).map((a) => ({ ...a, vehicleId: v.id, vehicleName: v.name }));
   });

@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const user = await requireUser();
   const v = await db.vehicle.findUnique({
     where: { id },
-    include: { spec: true, maintenances: { orderBy: { date: "desc" } }, upgrades: { orderBy: { date: "desc" } } },
+    include: { spec: true, maintenances: { orderBy: { date: "desc" } }, upgrades: { orderBy: { date: "desc" } }, fuelRecords: true },
   });
   if (!v || v.userId !== user.id) return new Response("Not found", { status: 404 });
   const buffer = await renderToBuffer(<VehicleReport vehicle={v} />);

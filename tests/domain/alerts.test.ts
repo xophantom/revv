@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeAlerts, type AlertInput } from "@/domain/alerts";
+import { computeAlerts, type AlertInput, type CustomAlertLite } from "@/domain/alerts";
 
 const base: AlertInput = {
   currentKm: 87430,
@@ -111,6 +111,39 @@ describe("computeAlerts", () => {
     expect(a.status).toBe("overdue");
     expect(a.driver).toBe("time");
     expect(a.remainingKm).toBeGreaterThan(0); // km still positive though overall overdue
+  });
+
+  // --- "soon" scales with the interval (fixed 1.500 km was 2,5% of a belt, 30% of a short rotation) ---
+
+  it("warns earlier on long intervals and later on short ones, within bounds", () => {
+    const run = (spec: AlertInput["spec"], currentKm: number) => computeAlerts({ ...base, currentKm, spec, maintenances: [] })[0];
+    // belt 60.000 km from a 40.000 baseline: soon from 3.000 km left (15% = 9.000, capped)
+    expect(run({ timingBelt: { intervalKm: 60000, lastChangeKm: 40000 } }, 96900).status).toBe("ok"); // 3.100 left
+    expect(run({ timingBelt: { intervalKm: 60000, lastChangeKm: 40000 } }, 97000).status).toBe("soon"); // 3.000 left
+    // 3.000 km interval: 15% = 450, raised to the 500 km floor
+    expect(run({ timingBelt: { intervalKm: 3000, lastChangeKm: 40000 } }, 42400).status).toBe("ok"); // 600 left
+    expect(run({ timingBelt: { intervalKm: 3000, lastChangeKm: 40000 } }, 42500).status).toBe("soon"); // 500 left
+  });
+
+  it("gives recurring custom alerts a window from their period, so a monthly one isn't always soon", () => {
+    const monthly: CustomAlertLite = { id: "c1", label: "Lavagem", dueKm: null, dueDate: new Date("2026-12-02"), done: false, repeatMonths: 1 };
+    const at = (today: string, c = monthly) => computeAlerts({ ...base, today: new Date(today), customAlerts: [c] })[0].status;
+    expect(at("2026-11-02")).toBe("ok"); // 30 days left: soon for a one-off, fine for a monthly
+    expect(at("2026-11-25")).toBe("soon"); // 7 days (15% of a month, floored at 7)
+    expect(at("2026-11-02", { ...monthly, repeatMonths: null })).toBe("soon");
+    const wipers = { id: "c2", label: "Palhetas", dueKm: 89000, dueDate: null, done: false, repeatKm: 1000 };
+    expect(computeAlerts({ ...base, currentKm: 88000, customAlerts: [wipers] })[0].status).toBe("ok"); // 1.000 left, window 500
+  });
+
+  it("scales the time window too: 24 months warns 45 days ahead (capped), custom alerts keep 30", () => {
+    const fluid = (today: string) => computeAlerts({
+      ...base,
+      today: new Date(today),
+      spec: { brakeFluid: { intervalMonths: 24 } },
+      maintenances: [{ category: "FLUIDS", date: new Date("2025-01-01"), km: 80000, specRuleIds: ["brakeFluid"] }],
+    }).find((x) => x.id === "brakeFluid")!;
+    expect(fluid("2026-11-17")).toMatchObject({ status: "soon", remainingDays: 45 }); // due 2027-01-01
+    expect(fluid("2026-11-16")).toMatchObject({ status: "ok", remainingDays: 46 });
   });
 
   // --- time dimension is day-precise (was month-granular: overdue showed as "em 0 m") ---
