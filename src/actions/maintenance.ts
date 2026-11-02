@@ -4,46 +4,79 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { ok, fail, type ActionResult } from "@/lib/result";
+import { attachmentInput, attachmentRows } from "@/lib/attachments";
+import { deleteBlobs } from "@/lib/blob";
 
-const attachment = z.object({ url: z.string().url(), key: z.string(), fileName: z.string(), mime: z.string(), size: z.number().int() });
 const input = z.object({
   date: z.coerce.date(),
   km: z.coerce.number().int().min(0),
   category: z.enum(["OIL", "FILTERS", "BRAKES", "TIRES", "REVISION", "SUSPENSION", "ELECTRICAL", "FLUIDS", "OTHER"]),
-  specRuleId: z.string().optional(),
+  specRuleIds: z.array(z.string()).default([]),
   title: z.string().min(1, "Título obrigatório"),
   workshop: z.string().optional(),
   costCents: z.coerce.number().int().min(0).default(0),
   notes: z.string().optional(),
-  attachments: z.array(attachment).default([]),
+  attachments: z.array(attachmentInput).default([]),
 });
+const updateInput = input.extend({ removeAttachmentIds: z.array(z.string()).default([]) });
 
-export async function createMaintenance(vehicleId: string, raw: unknown): Promise<ActionResult<{ id: string; odometerUpdatedTo: number | null }>> {
+type Saved = { odometerUpdatedTo: number | null };
+
+// Logging a service past the odometer moves the odometer forward (never back).
+// The `lt` guard makes the bump atomic against concurrent km updates.
+const bumpOdometer = (vehicleId: string, km: number) =>
+  db.vehicle.updateMany({ where: { id: vehicleId, currentKm: { lt: km } }, data: { currentKm: km } });
+
+function revalidate(vehicleId: string) {
+  revalidatePath(`/garage/${vehicleId}`);
+  revalidatePath("/garage");
+  revalidatePath("/dashboard");
+}
+
+export async function createMaintenance(vehicleId: string, raw: unknown): Promise<ActionResult<{ id: string } & Saved>> {
   const user = await requireUser();
   const v = await db.vehicle.findUnique({ where: { id: vehicleId } });
   if (!v || v.userId !== user.id) return fail("not_found");
   const parsed = input.safeParse(raw);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const { attachments, ...rest } = parsed.data;
-  // Logging a service past the odometer moves the odometer forward (never back).
-  // The `lt` guard makes the bump atomic against concurrent km updates.
   const [rec, bumped] = await db.$transaction([
-    db.maintenanceRecord.create({
-      data: { ...rest, vehicleId, attachments: { create: attachments.map((a) => ({ ...a, vehicleId, kind: a.mime.includes("pdf") ? ("pdf" as const) : ("image" as const) })) } },
-    }),
-    db.vehicle.updateMany({ where: { id: vehicleId, currentKm: { lt: rest.km } }, data: { currentKm: rest.km } }),
+    db.maintenanceRecord.create({ data: { ...rest, vehicleId, attachments: { create: attachmentRows(attachments, vehicleId) } } }),
+    bumpOdometer(vehicleId, rest.km),
   ]);
-  revalidatePath(`/garage/${vehicleId}`);
-  revalidatePath("/garage");
-  revalidatePath("/dashboard");
+  revalidate(vehicleId);
   return ok({ id: rec.id, odometerUpdatedTo: bumped.count ? rest.km : null });
+}
+
+export async function updateMaintenance(id: string, raw: unknown): Promise<ActionResult<Saved>> {
+  const user = await requireUser();
+  const rec = await db.maintenanceRecord.findUnique({ where: { id }, include: { vehicle: true, attachments: true } });
+  if (!rec || rec.vehicle.userId !== user.id) return fail("not_found");
+  const parsed = updateInput.safeParse(raw);
+  if (!parsed.success) return fail(parsed.error.issues[0].message);
+  const { attachments, removeAttachmentIds, ...rest } = parsed.data;
+  const removed = rec.attachments.filter((a) => removeAttachmentIds.includes(a.id));
+  const [, bumped] = await db.$transaction([
+    db.maintenanceRecord.update({
+      where: { id },
+      data: {
+        ...rest,
+        attachments: { deleteMany: { id: { in: removed.map((a) => a.id) } }, create: attachmentRows(attachments, rec.vehicleId) },
+      },
+    }),
+    bumpOdometer(rec.vehicleId, rest.km),
+  ]);
+  await deleteBlobs(removed.map((a) => a.url));
+  revalidate(rec.vehicleId);
+  return ok({ odometerUpdatedTo: bumped.count ? rest.km : null });
 }
 
 export async function deleteMaintenance(id: string): Promise<ActionResult> {
   const user = await requireUser();
-  const rec = await db.maintenanceRecord.findUnique({ where: { id }, include: { vehicle: true } });
+  const rec = await db.maintenanceRecord.findUnique({ where: { id }, include: { vehicle: true, attachments: true } });
   if (!rec || rec.vehicle.userId !== user.id) return fail("not_found");
   await db.maintenanceRecord.delete({ where: { id } });
-  revalidatePath(`/garage/${rec.vehicleId}`);
+  await deleteBlobs(rec.attachments.map((a) => a.url));
+  revalidate(rec.vehicleId);
   return ok(undefined);
 }

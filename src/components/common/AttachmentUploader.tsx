@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils";
 
 export type Uploaded = { url: string; key: string; fileName: string; mime: string; size: number };
 
-export function AttachmentUploader({ onUploaded, onBusyChange, disabled = false, label = "Anexar fotos/PDF" }: {
+export function AttachmentUploader({ onUploaded, onBusyChange, disabled = false, label = "Anexar fotos/PDF", accept = "image/*,application/pdf", multiple = true }: {
   onUploaded: (files: Uploaded[]) => void;
   onBusyChange?: (busy: boolean) => void;
   disabled?: boolean;
   label?: string;
+  accept?: string;
+  multiple?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   // Closing the dialog unmounts the uploader; an upload that resolves afterwards
@@ -48,15 +50,16 @@ export function AttachmentUploader({ onUploaded, onBusyChange, disabled = false,
       busy ? "cursor-wait" : disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-fg",
     )}>
       {busy ? "Enviando..." : label}
-      <input type="file" multiple accept="image/*,application/pdf" className="hidden" disabled={off}
+      <input type="file" multiple={multiple} accept={accept} className="hidden" disabled={off}
         onChange={(e) => { const fs = Array.from(e.target.files ?? []); if (fs.length) handleFiles(fs); e.target.value = ""; }} />
     </label>
   );
 }
 
-export function UploadedFiles({ files, onRemove, prefix = "", disabled = false }: {
-  files: Uploaded[];
-  onRemove: (file: Uploaded) => void;
+// Lists new uploads and, when editing, the files already saved (anything with a key and a name).
+export function UploadedFiles<F extends { key: string; fileName: string }>({ files, onRemove, prefix = "", disabled = false }: {
+  files: F[];
+  onRemove: (file: F) => void;
   prefix?: string;
   disabled?: boolean;
 }) {

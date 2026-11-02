@@ -25,13 +25,14 @@ type SpecRule = {
   intervalKm?: number;
   intervalMonths?: number;
   baselineKm?: number; // explicit baseline (e.g. timingBelt.lastChangeKm) when no service is logged
+  byCategory?: boolean; // an untagged record of this category counts as this service (see lastServiceFor)
 };
 
 export type MaintenanceLite = {
   category: MaintenanceCategory;
   date: Date;
   km: number;
-  specRuleId: string | null; // ties a record to a specific spec rule; disambiguates shared categories
+  specRuleIds: string[]; // spec rules this record serviced; disambiguates shared categories
 };
 
 export type CustomAlertLite = { id: string; label: string; dueKm: number | null; dueDate: Date | null; done: boolean };
@@ -47,10 +48,10 @@ export type AlertInput = {
 function rulesFromSpec(spec: VehicleSpecData): SpecRule[] {
   const r: SpecRule[] = [];
   if (spec.engineOil?.intervalKm || spec.engineOil?.intervalMonths)
-    r.push({ id: "engineOil", label: "Troca de óleo", category: "OIL", intervalKm: spec.engineOil.intervalKm, intervalMonths: spec.engineOil.intervalMonths });
+    r.push({ id: "engineOil", label: "Troca de óleo", category: "OIL", intervalKm: spec.engineOil.intervalKm, intervalMonths: spec.engineOil.intervalMonths, byCategory: true });
   if (spec.transmissionOil?.intervalKm)
     r.push({ id: "transmissionOil", label: "Óleo do câmbio", category: "FLUIDS", intervalKm: spec.transmissionOil.intervalKm });
-  if (spec.tires?.rotationKm) r.push({ id: "tires", label: "Rodízio de pneus", category: "TIRES", intervalKm: spec.tires.rotationKm });
+  if (spec.tires?.rotationKm) r.push({ id: "tires", label: "Rodízio de pneus", category: "TIRES", intervalKm: spec.tires.rotationKm, byCategory: true });
   if (spec.brakeFluid?.intervalMonths) r.push({ id: "brakeFluid", label: "Fluido de freio", category: "FLUIDS", intervalMonths: spec.brakeFluid.intervalMonths });
   if (spec.coolant?.intervalMonths) r.push({ id: "coolant", label: "Arrefecimento", category: "FLUIDS", intervalMonths: spec.coolant.intervalMonths });
   if (spec.sparkPlugs?.intervalKm) r.push({ id: "sparkPlugs", label: "Velas", category: "ELECTRICAL", intervalKm: spec.sparkPlugs.intervalKm });
@@ -61,8 +62,10 @@ function rulesFromSpec(spec: VehicleSpecData): SpecRule[] {
   return r;
 }
 
-export function specRuleOptions(spec: VehicleSpecData): { id: string; label: string }[] {
-  return rulesFromSpec(spec).map((r) => ({ id: r.id, label: r.label }));
+export type SpecRuleOption = { id: string; label: string; category: MaintenanceCategory; byCategory: boolean };
+
+export function specRuleOptions(spec: VehicleSpecData): SpecRuleOption[] {
+  return rulesFromSpec(spec).map((r) => ({ id: r.id, label: r.label, category: r.category, byCategory: Boolean(r.byCategory) }));
 }
 
 const RANK: Record<AlertStatus, number> = { overdue: 0, unknown: 1, soon: 2, ok: 3 };
@@ -74,13 +77,15 @@ function classifyDim(remaining: number, soonThreshold: number): AlertStatus {
   return "ok";
 }
 
-// Newest maintenance that services this rule. Prefer records explicitly tagged with the rule id.
-// Fall back to category match ONLY when the category maps to a single rule — otherwise a shared
-// category (FILTERS, FLUIDS) would cross-contaminate sibling rules, so an untagged record is ignored.
-function lastServiceFor(rule: SpecRule, maint: MaintenanceLite[], uniqueCats: Set<MaintenanceCategory>): MaintenanceLite | undefined {
-  const tagged = maint.filter((m) => m.specRuleId === rule.id);
-  const pool = tagged.length ? tagged : uniqueCats.has(rule.category) ? maint.filter((m) => m.category === rule.category) : [];
-  return [...pool].sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+// Newest maintenance that services this rule: records tagged with the rule id, plus untagged
+// records of its category when the rule is byCategory (oil, tires: the category can't mean anything
+// else). Elsewhere an untagged record is ignored: a FILTERS or FLUIDS record would cross-contaminate
+// sibling rules, and an untagged REVISION or ELECTRICAL one says nothing about the belt or the plugs.
+// A tagged record counts only for the rules it lists, so a multi-item revision never resets a sibling.
+function lastServiceFor(rule: SpecRule, maint: MaintenanceLite[]): MaintenanceLite | undefined {
+  const pool = maint.filter((m) =>
+    m.specRuleIds.includes(rule.id) || (rule.byCategory && !m.specRuleIds.length && m.category === rule.category));
+  return pool.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 }
 
 type Dim = { status: AlertStatus; dim: "km" | "time" };
@@ -102,14 +107,10 @@ function urgencyKey(a: Alert): number {
 
 export function computeAlerts(input: AlertInput): Alert[] {
   const rules = rulesFromSpec(input.spec);
-  const catCount = new Map<MaintenanceCategory, number>();
-  for (const r of rules) catCount.set(r.category, (catCount.get(r.category) ?? 0) + 1);
-  const uniqueCats = new Set([...catCount].filter(([, n]) => n === 1).map(([c]) => c));
-
   const alerts: Alert[] = [];
 
   for (const rule of rules) {
-    const last = lastServiceFor(rule, input.maintenances, uniqueCats);
+    const last = lastServiceFor(rule, input.maintenances);
     let remainingKm: number | null = null;
     let remainingDays: number | null = null;
     const dims: Dim[] = [];

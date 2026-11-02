@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { toggleCustomAlertDone, deleteCustomAlert } from "@/actions/alerts";
 import { formatDateOnly } from "@/lib/dates";
+import { CustomAlertForm } from "./CustomAlertForm";
 
 export type CustomAlertRecord = {
   id: string;
@@ -13,7 +14,7 @@ export type CustomAlertRecord = {
   done: boolean;
 };
 
-function AlertItem({ alert }: { alert: CustomAlertRecord }) {
+function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -56,6 +57,8 @@ function AlertItem({ alert }: { alert: CustomAlertRecord }) {
           <div className="mono mt-0.5 text-xs text-muted">{hints.join(" · ")}</div>
         )}
       </div>
+      <CustomAlertForm vehicleId={vehicleId} alert={alert}
+        trigger={<button type="button" disabled={pending} className="mono shrink-0 text-[10px] text-muted transition hover:text-fg disabled:opacity-50">editar</button>} />
       <button
         type="button"
         onClick={onDelete}
@@ -69,11 +72,11 @@ function AlertItem({ alert }: { alert: CustomAlertRecord }) {
   );
 }
 
-export function CustomAlertList({ alerts }: { alerts: CustomAlertRecord[] }) {
+export function CustomAlertList({ vehicleId, alerts }: { vehicleId: string; alerts: CustomAlertRecord[] }) {
   if (!alerts.length) return null;
   return (
     <div className="mt-3 grid gap-2">
-      {alerts.map((a) => <AlertItem key={a.id} alert={a} />)}
+      {alerts.map((a) => <AlertItem key={a.id} alert={a} vehicleId={vehicleId} />)}
     </div>
   );
 }

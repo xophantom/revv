@@ -13,6 +13,10 @@
   --font-mono: var(--font-jb), ui-monospace, monospace;
 }
 
+:root {
+  color-scheme: dark; /* native date pickers, scrollbars and popups follow the dark theme */
+}
+
 html, body {
   background: var(--color-bg);
   color: var(--color-fg);

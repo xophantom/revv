@@ -118,7 +118,8 @@ model MaintenanceRecord {
   date        DateTime
   km          Int
   category    MaintenanceCategory
-  specRuleId  String?             // optional: ties this record to a spec rule (e.g. "airFilter") for precise alerts
+  specRuleIds String[]            @default([]) // spec rules this service covered (e.g. ["engineOil", "airFilter"]) for precise alerts
+  specRuleId  String?             // legacy single-rule tag, backfilled into specRuleIds; unused, drop in a later migration
   title       String
   workshop    String?
   costCents   Int                 @default(0)

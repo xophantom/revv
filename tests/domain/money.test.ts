@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { realToCents, centsToBRL } from "@/lib/money";
+import { realToCents, centsToBRL, centsToInput } from "@/lib/money";
 
 describe("money", () => {
   it("parses reais string to integer cents", () => {
@@ -32,5 +32,11 @@ describe("money", () => {
   });
   it("accepts an R$ prefix", () => {
     expect(realToCents("R$ 1.290,90")).toBe(129090);
+  });
+  it("round-trips cents through the edit field", () => {
+    expect(centsToInput(150050)).toBe("1500,50");
+    expect(centsToInput(8990)).toBe("89,90");
+    expect(centsToInput(0)).toBe("");
+    for (const c of [1, 99, 150050, 12345678]) expect(realToCents(centsToInput(c))).toBe(c);
   });
 });

@@ -1,10 +1,7 @@
 import { computeAlerts, type AlertInput } from "@/domain/alerts";
+import type { MaintenanceFormProps } from "@/components/maintenance/MaintenanceForm";
+import { AlertActions } from "./AlertActions";
 
-const STYLE: Record<string, string> = {
-  overdue: "bg-accent/20 border-accent text-accent",
-  soon: "bg-accent/10 border-accent/40 text-accent",
-  unknown: "border-border text-muted",
-};
 // Under ~2 months shows days; beyond that, rounded months.
 function timeSpan(days: number): string {
   const n = Math.abs(days);
@@ -22,16 +19,11 @@ function detail(a: ReturnType<typeof computeAlerts>[number]): string {
   }
   return "";
 }
-export function AlertChips(input: AlertInput) {
-  const alerts = computeAlerts(input).filter((a) => a.status !== "ok").slice(0, 6);
-  if (!alerts.length) return null;
-  return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      {alerts.map((a) => (
-        <span key={a.id} className={`mono flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] ${STYLE[a.status] ?? STYLE.unknown}`}>
-          <span className="h-1.5 w-1.5 rounded-full bg-current" /> {a.label} · {detail(a)}
-        </span>
-      ))}
-    </div>
-  );
+
+export function AlertChips({ input, form, register }: { input: AlertInput; form: MaintenanceFormProps; register?: string }) {
+  const alerts = computeAlerts(input)
+    .filter((a) => a.status !== "ok")
+    .slice(0, 6)
+    .map((a) => ({ id: a.id, label: a.label, status: a.status, source: a.source, detail: detail(a) }));
+  return <AlertActions alerts={alerts} form={form} register={register} />;
 }

@@ -25,3 +25,7 @@ export function realToCents(input: string): number {
 export function centsToBRL(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
+// Cents back to what the cost field accepts ("1500,50"); zero stays empty so the placeholder shows.
+export function centsToInput(cents: number): string {
+  return cents ? (cents / 100).toFixed(2).replace(".", ",") : "";
+}
