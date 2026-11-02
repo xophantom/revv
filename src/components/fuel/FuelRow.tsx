@@ -58,28 +58,28 @@ export function FuelRow({ record, form }: { record: FuelRecordView; form: FuelFo
 
   return (
     <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-[10px] border border-border bg-surface p-3">
-      <div className="mono flex flex-col items-center justify-center rounded-md bg-surface2 px-2 py-1.5 text-center leading-tight">
+      <div className="tabular-nums flex flex-col items-center justify-center rounded-md bg-surface2 px-2 py-1.5 text-center leading-tight">
         <span className="text-lg font-bold">{day}</span>
         <span className="text-[11px] text-muted">{month}</span>
         <span className="text-[11px] text-muted">{year}</span>
       </div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mono font-medium tabular-nums">{liters}</span>
+          <span className="font-medium tabular-nums">{liters}</span>
           <CategoryBadge icon={FUEL_ICON} label={FUEL_LABELS[record.fuel]} />
-          {!record.fullTank && <span className="mono rounded border border-dashed border-white/20 px-1.5 py-0.5 text-[11px] text-muted">parcial</span>}
+          {!record.fullTank && <span className="tabular-nums rounded border border-dashed border-white/20 px-1.5 py-0.5 text-[11px] text-muted">parcial</span>}
           {record.kmPerLiter != null && (
-            <span className="mono rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 text-[11px] text-accent tabular-nums"
+            <span className="rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 text-[11px] text-accent tabular-nums"
               title={record.spanKm != null ? `${record.spanKm.toLocaleString("pt-BR")} km desde o tanque cheio anterior` : undefined}>
               {formatKmPerLiter(record.kmPerLiter)}
             </span>
           )}
         </div>
-        <div className="mono mt-0.5 break-words text-xs text-muted">{details}</div>
+        <div className="tabular-nums mt-0.5 break-words text-xs text-muted">{details}</div>
         {record.notes && <p className="mt-1 text-xs text-muted">{record.notes}</p>}
       </div>
       <div className="flex flex-col items-end gap-1">
-        <Money cents={record.costCents} className="mono font-bold text-accent" />
+        <Money cents={record.costCents} className="tabular-nums font-bold text-accent" />
         <div className="-mr-1.5 flex">
           <FuelForm {...form} record={record}
             trigger={<Button variant="ghost" size="icon" disabled={pending} aria-label="Editar abastecimento" title="Editar"><Pencil size={14} /></Button>} />

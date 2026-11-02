@@ -27,7 +27,7 @@ export function AttachmentList({ attachments }: { attachments: Att[] }) {
           href={a.url}
           target="_blank"
           rel="noreferrer"
-          className="mono flex items-center gap-1 text-xs text-muted transition hover:text-accent"
+          className="tabular-nums flex items-center gap-1 text-xs text-muted transition hover:text-accent"
         >
           <FileText size={13} aria-hidden className="shrink-0" />
           {a.fileName}

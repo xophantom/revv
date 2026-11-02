@@ -50,7 +50,7 @@ export function MaintenanceRow({ record, form }: { record: MaintRecord; form: Ma
 
   return (
     <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-[10px] border border-border bg-surface p-3">
-      <div className="mono flex flex-col items-center justify-center rounded-md bg-surface2 px-2 py-1.5 text-center leading-tight">
+      <div className="tabular-nums flex flex-col items-center justify-center rounded-md bg-surface2 px-2 py-1.5 text-center leading-tight">
         <span className="text-lg font-bold">{day}</span>
         <span className="text-[11px] text-muted">{month}</span>
         <span className="text-[11px] text-muted">{year}</span>
@@ -59,16 +59,16 @@ export function MaintenanceRow({ record, form }: { record: MaintRecord; form: Ma
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{record.title}</span>
           <CategoryBadge icon={MAINTENANCE_ICONS[record.category]} label={MAINTENANCE_LABELS[record.category]} />
-          {items.length > 0 && <span className="mono text-[11px] text-muted">{items.join(" · ")}</span>}
+          {items.length > 0 && <span className="tabular-nums text-[11px] text-muted">{items.join(" · ")}</span>}
         </div>
-        <div className="mono mt-0.5 text-xs text-muted">
+        <div className="tabular-nums mt-0.5 text-xs text-muted">
           {record.workshop ? record.workshop + " · " : ""}{record.km.toLocaleString("pt-BR")} km
         </div>
         {record.notes && <p className="mt-1 text-xs text-muted">{record.notes}</p>}
         {record.attachments.length > 0 && <div className="mt-2"><AttachmentList attachments={record.attachments} /></div>}
       </div>
       <div className="flex flex-col items-end gap-1">
-        <Money cents={record.costCents} className="mono font-bold text-accent" />
+        <Money cents={record.costCents} className="tabular-nums font-bold text-accent" />
         <div className="-mr-1.5 flex">
           <MaintenanceForm {...form} record={record}
             trigger={<Button variant="ghost" size="icon" disabled={pending} aria-label="Editar manutenção" title="Editar"><Pencil size={14} /></Button>} />

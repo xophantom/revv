@@ -81,7 +81,7 @@ export function SpecEditForm({ vehicleId, initial }: { vehicleId: string; initia
 
   return (
     <form onSubmit={onSubmit} className="grid gap-6">
-      <p className="mono text-xs text-muted">Os intervalos ligam os alertas e os cards da ficha. Deixe em branco o que não se aplica.</p>
+      <p className="tabular-nums text-xs text-muted">Os intervalos ligam os alertas e os cards da ficha. Deixe em branco o que não se aplica.</p>
       <Section title="Óleo do motor">
         <Field label="Tipo">{text("engineOil", "type", "5W30")}</Field>
         <Field label="Marca">{text("engineOil", "brand")}</Field>
@@ -149,7 +149,7 @@ export function SpecEditForm({ vehicleId, initial }: { vehicleId: string; initia
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="rounded-xl border border-border bg-surface p-4">
-      <legend className="mono px-1 text-xs uppercase tracking-widest text-accent">{"// "}{title}</legend>
+      <legend className="tabular-nums px-1 text-xs uppercase tracking-widest text-accent">{"// "}{title}</legend>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">{children}</div>
     </fieldset>
   );

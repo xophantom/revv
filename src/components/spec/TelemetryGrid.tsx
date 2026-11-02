@@ -48,21 +48,21 @@ function TelemetryCard({ item, onRegister }: { item: TelemetryItem; onRegister?:
   return (
     <div className={cn("flex flex-col rounded-[10px] border bg-surface p-3.5", alert?.status === "overdue" ? "border-accent/60" : "border-border")}>
       <div className="flex items-start justify-between gap-2">
-        <h3 className="mono pt-0.5 text-[11px] uppercase tracking-wider text-muted">{item.label}</h3>
+        <h3 className="tabular-nums pt-0.5 text-[11px] uppercase tracking-wider text-muted">{item.label}</h3>
         {alert && alert.status !== "ok" && <StatusBadge status={alert.status} />}
       </div>
       {item.value && <div className="mt-1 font-bold">{item.value}</div>}
-      {item.details.length > 0 && <div className="mono mt-0.5 text-[11px] text-muted">{item.details.join(" · ")}</div>}
+      {item.details.length > 0 && <div className="tabular-nums mt-0.5 text-[11px] text-muted">{item.details.join(" · ")}</div>}
       {alert ? (
         <>
           <GaugeBar gauge={gauge} status={alert.status} label={text ? `${item.label}: ${text.left}` : `${item.label}: sem histórico`} />
-          <div className="mono mt-1.5 flex items-baseline justify-between gap-2 text-[11px]">
+          <div className="tabular-nums mt-1.5 flex items-baseline justify-between gap-2 text-[11px]">
             <span className="text-muted">{text ? text.used : "sem histórico de troca"}</span>
             {text && <span className={alert.status === "ok" ? "text-fg/80" : "text-accent"}>{text.left}</span>}
           </div>
           <div className="mt-auto pt-3">
             <div className="flex items-end justify-between gap-2 border-t border-border pt-2.5">
-              <div className="mono min-w-0 text-[11px] leading-relaxed text-muted">
+              <div className="tabular-nums min-w-0 text-[11px] leading-relaxed text-muted">
                 {item.interval && <div className="truncate">{item.interval}</div>}
                 <div className="truncate">{last ? `última: ${last}` : "registre a última troca"}</div>
               </div>
@@ -71,7 +71,7 @@ function TelemetryCard({ item, onRegister }: { item: TelemetryItem; onRegister?:
           </div>
         </>
       ) : (
-        <p className="mono mt-2 text-[11px] text-muted/70">{item.interval ?? "sem intervalo na ficha"}</p>
+        <p className="tabular-nums mt-2 text-[11px] text-muted/70">{item.interval ?? "sem intervalo na ficha"}</p>
       )}
     </div>
   );
@@ -107,7 +107,7 @@ export function TelemetryGrid({ vehicleId, items, notes, form, register }: {
       </SectionHeading>
       {items.length === 0 && !notes ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-dashed border-border p-4">
-          <p className="mono text-xs text-muted">{"// ficha vazia: preencha os intervalos para acompanhar óleo, filtros, pneus e afins"}</p>
+          <p className="tabular-nums text-xs text-muted">{"// ficha vazia: preencha os intervalos para acompanhar óleo, filtros, pneus e afins"}</p>
           <Link href={editHref} className={buttonClass({ variant: "outline", size: "sm" })}>Preencher ficha</Link>
         </div>
       ) : (
@@ -118,7 +118,7 @@ export function TelemetryGrid({ vehicleId, items, notes, form, register }: {
         </div>
       )}
       {notes && (
-        <p className="mono mt-3 flex gap-2 rounded-lg border border-dashed border-border p-3 text-xs text-muted">
+        <p className="tabular-nums mt-3 flex gap-2 rounded-lg border border-dashed border-border p-3 text-xs text-muted">
           <StickyNote size={14} aria-hidden className="mt-px shrink-0" />{notes}
         </p>
       )}

@@ -9,7 +9,7 @@ export function Chip({ selected = false, icon: Icon, className, children, ...pro
 }) {
   return (
     <button type="button" aria-pressed={selected} className={cn(
-      "mono inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors",
+      "tabular-nums inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors",
       "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50",
       selected ? "border-accent bg-accent/15 text-accent" : "border-border text-muted hover:border-white/25 hover:text-fg",
       className,

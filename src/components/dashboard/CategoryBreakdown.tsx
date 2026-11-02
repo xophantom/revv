@@ -45,10 +45,10 @@ export function CategoryBreakdown({ byCategory, maintenanceCents, upgradeCents, 
   return (
     <Panel title="Por categoria" className="min-w-0">
       {!byCategory.length ? (
-        <p className="mono text-sm text-muted">{emptyLabel}</p>
+        <p className="tabular-nums text-sm text-muted">{emptyLabel}</p>
       ) : (
         <>
-          <div className="mono mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
+          <div className="tabular-nums mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
             <Legend kind="maintenance" label="Manutenção" cents={maintenanceCents} total={totalCents} />
             <Legend kind="upgrade" label="Upgrade" cents={upgradeCents} total={totalCents} />
             {/* Only once there's fuel spend, so a garage that doesn't log fills keeps the two-way split. */}
@@ -64,13 +64,13 @@ export function CategoryBreakdown({ byCategory, maintenanceCents, upgradeCents, 
                       <Icon size={14} aria-hidden className={cn("shrink-0", ICON[c.kind])} />
                       <span className="truncate">{label}</span>
                       {c.kind === "upgrade" && (
-                        <span className="mono shrink-0 rounded border border-border px-1 text-[11px] leading-4 text-muted">
+                        <span className="tabular-nums shrink-0 rounded border border-border px-1 text-[11px] leading-4 text-muted">
                           <span aria-hidden>UPG</span>
                           <span className="sr-only">upgrade</span>
                         </span>
                       )}
                     </span>
-                    <span className="mono shrink-0 tabular-nums">
+                    <span className="shrink-0 tabular-nums">
                       {centsToBRL(c.cents)} <span className="text-[11px] text-muted">{share(c.cents, totalCents)}</span>
                     </span>
                   </div>

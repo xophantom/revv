@@ -28,13 +28,13 @@ function TooltipContent({ active, payload }: { active?: boolean; payload?: reado
 export function ConsumptionChart({ points, average }: { points: ConsumptionPoint[]; average: number | null }) {
   return (
     <Panel title="Consumo por tanque" className="min-w-0" action={average != null && (
-      <span className="mono inline-flex items-center gap-1.5 text-[11px] text-muted">
+      <span className="tabular-nums inline-flex items-center gap-1.5 text-[11px] text-muted">
         <span aria-hidden className="w-3 border-t border-dashed border-muted" />
         média {formatKmPerLiter(average)}
       </span>
     )}>
-      {/* SVG tick text inherits the mono font from this wrapper. */}
-      <div className="mono">
+      {/* SVG tick text inherits tabular figures from this wrapper. */}
+      <div className="tabular-nums">
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={points} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={GRID} vertical={false} />

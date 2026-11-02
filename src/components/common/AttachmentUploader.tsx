@@ -171,7 +171,7 @@ export function UploadedFiles<F extends { key: string; fileName: string }>({ fil
   return (
     <ul className="mt-2 grid gap-1">
       {files.map((f) => (
-        <li key={f.key} className="mono flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1 text-xs text-muted">
+        <li key={f.key} className="tabular-nums flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1 text-xs text-muted">
           <span className="min-w-0 truncate">{prefix}{f.fileName}</span>
           <button type="button" onClick={() => onRemove(f)} disabled={disabled} aria-label={`Remover ${f.fileName}`}
             className="-m-1 shrink-0 cursor-pointer rounded p-1 transition hover:text-accent disabled:opacity-50"><X size={13} /></button>

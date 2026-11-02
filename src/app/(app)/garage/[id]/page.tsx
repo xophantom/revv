@@ -102,7 +102,7 @@ export default async function VehiclePage({ params, searchParams }: {
   const details = [[v.make, v.model].filter(Boolean).join(" "), v.year, v.engine, v.color].filter(Boolean).join(" · ");
   return (
     <div>
-      <Link href="/garage" className="mono -mt-2 mb-4 inline-flex items-center gap-1 text-xs text-muted transition hover:text-fg">
+      <Link href="/garage" className="tabular-nums -mt-2 mb-4 inline-flex items-center gap-1 text-xs text-muted transition hover:text-fg">
         <ChevronLeft size={14} aria-hidden /> Garagem
       </Link>
       <section className="mb-6 grid gap-6 md:grid-cols-[300px_1fr]">
@@ -114,7 +114,7 @@ export default async function VehiclePage({ params, searchParams }: {
           </div>
         ) : (
           <VehicleForm vehicle={editable} trigger={
-            <button type="button" className="mono flex h-48 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface2 text-xs text-muted transition hover:border-white/25 hover:text-fg">
+            <button type="button" className="tabular-nums flex h-48 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface2 text-xs text-muted transition hover:border-white/25 hover:text-fg">
               <ImagePlus size={22} aria-hidden /> adicionar foto
             </button>
           } />
@@ -125,7 +125,7 @@ export default async function VehiclePage({ params, searchParams }: {
             <VehicleActions vehicle={editable} />
           </div>
           {(v.plate || details) && (
-            <div className="mono mt-2 flex flex-wrap gap-2 text-xs text-muted">
+            <div className="tabular-nums mt-2 flex flex-wrap gap-2 text-xs text-muted">
               {v.plate && <span className="rounded bg-white px-2 py-1 font-bold text-bg">{v.plate}</span>}
               {details && <span className="rounded border border-border px-2 py-1">{details}</span>}
             </div>
@@ -142,10 +142,10 @@ export default async function VehiclePage({ params, searchParams }: {
       </section>
       <Tabs defaultValue="maint">
         <TabsList>
-          <TabsTrigger value="maint">Manutenções <span className="mono ml-1.5 text-[11px] text-accent">{v.maintenances.length}</span></TabsTrigger>
-          <TabsTrigger value="upg">Upgrades <span className="mono ml-1.5 text-[11px] text-accent">{v.upgrades.length}</span></TabsTrigger>
-          <TabsTrigger value="fuel">Abastecimento <span className="mono ml-1.5 text-[11px] text-accent">{v.fuelRecords.length}</span></TabsTrigger>
-          <TabsTrigger value="gallery">Galeria <span className="mono ml-1.5 text-[11px] text-accent">{v.attachments.length}</span></TabsTrigger>
+          <TabsTrigger value="maint">Manutenções <span className="tabular-nums ml-1.5 text-[11px] text-accent">{v.maintenances.length}</span></TabsTrigger>
+          <TabsTrigger value="upg">Upgrades <span className="tabular-nums ml-1.5 text-[11px] text-accent">{v.upgrades.length}</span></TabsTrigger>
+          <TabsTrigger value="fuel">Abastecimento <span className="tabular-nums ml-1.5 text-[11px] text-accent">{v.fuelRecords.length}</span></TabsTrigger>
+          <TabsTrigger value="gallery">Galeria <span className="tabular-nums ml-1.5 text-[11px] text-accent">{v.attachments.length}</span></TabsTrigger>
           <TabsTrigger value="finance">Financeiro</TabsTrigger>
         </TabsList>
         <TabsContent value="maint"><MaintenanceList {...form} records={maintRecords} /></TabsContent>

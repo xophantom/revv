@@ -102,7 +102,7 @@ function FuelFields({ vehicleId, currentKm, record, close, setBusy }: FuelFormPr
             <span className={cn("absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-fg transition-transform", fullTank && "translate-x-4")} />
           </span>
         </button>
-        <p id={hintId} className="mono mt-1 text-[11px] text-muted">O consumo (km/l) é medido entre tanques cheios; os parciais entram no próximo cálculo.</p>
+        <p id={hintId} className="tabular-nums mt-1 text-[11px] text-muted">O consumo (km/l) é medido entre tanques cheios; os parciais entram no próximo cálculo.</p>
       </div>
       <Field label="Posto"><Input name="station" defaultValue={record?.station ?? ""} placeholder="Ex.: Posto do Centro" /></Field>
       <Field label="Notas"><Textarea name="notes" defaultValue={record?.notes ?? ""} /></Field>

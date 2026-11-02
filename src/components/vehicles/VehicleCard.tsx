@@ -41,10 +41,10 @@ export function VehicleCard({ v, stats, i }: {
             <div className="min-w-0 break-words text-xl font-bold">{v.name}</div>
             <AlertBadge overdue={stats.overdue} soon={stats.soon} />
           </div>
-          <div className="mono mt-1 text-xs text-muted">{[v.plate, v.year, `${v.currentKm.toLocaleString("pt-BR")} km`].filter(Boolean).join(" · ")}</div>
+          <div className="tabular-nums mt-1 text-xs text-muted">{[v.plate, v.year, `${v.currentKm.toLocaleString("pt-BR")} km`].filter(Boolean).join(" · ")}</div>
           <div className="mt-3 flex items-baseline justify-between gap-2 border-t border-border pt-3">
-            <span className="mono text-[11px] uppercase tracking-wider text-muted">Gasto total</span>
-            <span className={cn("mono text-sm font-bold", stats.totalCents ? "text-accent" : "text-muted")}>{centsToBRL(stats.totalCents)}</span>
+            <span className="tabular-nums text-[11px] uppercase tracking-wider text-muted">Gasto total</span>
+            <span className={cn("tabular-nums text-sm font-bold", stats.totalCents ? "text-accent" : "text-muted")}>{centsToBRL(stats.totalCents)}</span>
           </div>
         </div>
       </Link>

@@ -33,10 +33,10 @@ export function SpendOverTime({ byMonth, emptyLabel }: { byMonth: MonthTotal[]; 
   return (
     <Panel title="Gastos por mês" className="min-w-0">
       {!hasSpend ? (
-        <p className="mono text-sm text-muted">{emptyLabel}</p>
+        <p className="tabular-nums text-sm text-muted">{emptyLabel}</p>
       ) : (
-        // SVG tick text inherits the mono font from this wrapper.
-        <div className="mono">
+        // SVG tick text inherits tabular figures from this wrapper.
+        <div className="tabular-nums">
           <ResponsiveContainer width="100%" height={240}>
             {/* Bars, not a smoothed area: spend is per month, and empty months stay visibly empty. */}
             <BarChart data={byMonth} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>

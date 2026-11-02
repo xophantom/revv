@@ -84,12 +84,12 @@ function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: 
           <span className={alert.done ? "text-muted line-through" : "font-medium"}>{alert.label}</span>
           {!alert.done && alert.status && alert.status !== "ok" && <StatusBadge status={alert.status}>{alert.detail}</StatusBadge>}
           {repeat && (
-            <span className="mono whitespace-nowrap text-[11px] text-muted">
+            <span className="tabular-nums whitespace-nowrap text-[11px] text-muted">
               <span aria-hidden>↻ </span><span className="sr-only">repete: </span>{repeat}
             </span>
           )}
         </div>
-        {hints.length > 0 && <div className="mono mt-0.5 text-xs text-muted">{hints.join(" · ")}</div>}
+        {hints.length > 0 && <div className="tabular-nums mt-0.5 text-xs text-muted">{hints.join(" · ")}</div>}
       </div>
       <div className="flex shrink-0">
         <CustomAlertForm vehicleId={vehicleId} alert={alert}
@@ -102,7 +102,7 @@ function AlertItem({ alert, vehicleId }: { alert: CustomAlertRecord; vehicleId: 
 }
 
 export function CustomAlertList({ vehicleId, alerts }: { vehicleId: string; alerts: CustomAlertRecord[] }) {
-  if (!alerts.length) return <p className="mono text-xs text-muted">{"// nenhum alerta: use para IPVA, licenciamento, seguro ou o que não está na ficha"}</p>;
+  if (!alerts.length) return <p className="tabular-nums text-xs text-muted">{"// nenhum alerta: use para IPVA, licenciamento, seguro ou o que não está na ficha"}</p>;
   return (
     <div className="grid gap-2">
       {alerts.map((a) => <AlertItem key={a.id} alert={a} vehicleId={vehicleId} />)}

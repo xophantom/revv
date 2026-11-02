@@ -18,7 +18,7 @@ export const STATUS_LABEL: Record<AlertStatus, string> = {
 
 export function StatusBadge({ status, children, className }: { status: AlertStatus; children?: React.ReactNode; className?: string }) {
   return (
-    <span className={cn("mono inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px]", STATUS_TONE[status], className)}>
+    <span className={cn("tabular-nums inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px]", STATUS_TONE[status], className)}>
       <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       {children ?? STATUS_LABEL[status]}
     </span>

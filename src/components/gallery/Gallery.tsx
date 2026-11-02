@@ -4,7 +4,7 @@ import { Thumb } from "./Thumb";
 
 export function Gallery({ images }: { images: { url: string; caption?: string | null }[] }) {
   const open = useUi((s) => s.openLightbox);
-  if (!images.length) return <p className="mono text-sm text-muted">{"// sem fotos ainda: adicione fotos nas manutenções e upgrades"}</p>;
+  if (!images.length) return <p className="tabular-nums text-sm text-muted">{"// sem fotos ainda: adicione fotos nas manutenções e upgrades"}</p>;
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
       {images.map((img, i) => (

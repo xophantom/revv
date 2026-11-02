@@ -114,7 +114,7 @@ function CustomAlertFields({ vehicleId, alert, close, setBusy }: { vehicleId: st
         <Segmented options={REPEAT_OPTIONS} value={mode} onChange={setMode} />
         {mode !== "none" && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="mono text-xs text-muted">a cada</span>
+            <span className="tabular-nums text-xs text-muted">a cada</span>
             <div className="w-36">
               {mode === "months" ? (
                 <IntegerInput aria-label="Repetir a cada quantos meses" suffix={repeatMonths === 1 ? "mês" : "meses"} required
@@ -134,7 +134,7 @@ function CustomAlertFields({ vehicleId, alert, close, setBusy }: { vehicleId: st
       {mode === "none" ? (
         <>
           <div className="grid grid-cols-2 gap-3">{kmField}{dateField}</div>
-          <p className="mono text-[11px] text-muted">Informe pelo menos km ou data.</p>
+          <p className="tabular-nums text-[11px] text-muted">Informe pelo menos km ou data.</p>
         </>
       ) : (
         <div className="max-w-[calc(50%-0.375rem)]">{mode === "months" ? dateField : kmField}</div>

@@ -35,7 +35,7 @@ export function FuelList({ records, ...form }: FuelFormProps & { records: FuelFi
         <FuelForm {...form} trigger={<Button><Plus size={16} /> Abastecimento</Button>} />
       </div>
       {views.length === 0 ? (
-        <p className="mono text-sm text-muted">{"// nenhum abastecimento registrado"}</p>
+        <p className="tabular-nums text-sm text-muted">{"// nenhum abastecimento registrado"}</p>
       ) : (
         <>
           <FuelSummary summary={summary} />
