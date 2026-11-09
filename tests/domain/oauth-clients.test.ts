@@ -43,6 +43,7 @@ describe("dynamic client registration", () => {
       { token_endpoint_auth_method: "client_secret_basic" },
       { token_endpoint_auth_method: "private_key_jwt" },
       { grant_types: ["client_credentials"] },
+      { response_types: [] },
       { grant_types: ["refresh_token"] },
       { response_types: ["token"] },
       { client_name: 42 },
@@ -123,5 +124,23 @@ describe("client ID metadata documents", () => {
     for (const ip of ["10.0.0.1", "172.20.1.1", "192.168.1.1", "127.0.0.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "::", "fd00::1", "fe80::1", "::ffff:10.0.0.1", "nonsense"]) {
       expect(isPublicAddress(ip), ip).toBe(false);
     }
+  });
+});
+
+describe("claude.ai's published client (CIMD)", () => {
+  // As served at https://claude.ai/oauth/mcp-oauth-client-metadata on 2026-11-09. It lists a grant we
+  // don't offer (jwt-bearer); rejecting it blocked "Usar a identidade publicada do Claude".
+  const CLAUDE_AI = {
+    client_id: "https://claude.ai/oauth/mcp-oauth-client-metadata",
+    client_name: "Claude",
+    client_uri: "https://claude.ai",
+    redirect_uris: ["https://claude.ai/api/mcp/auth_callback"],
+    grant_types: ["authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:jwt-bearer"],
+    response_types: ["code"],
+    token_endpoint_auth_method: "none",
+  };
+  it("is accepted, ignoring the grant types we don't offer", () => {
+    const res = parseClientMetadataDocument(CLAUDE_AI.client_id, CLAUDE_AI);
+    expect(res).toMatchObject({ ok: true, client: { name: "Claude", redirectUris: ["https://claude.ai/api/mcp/auth_callback"] } });
   });
 });
