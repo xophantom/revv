@@ -23,11 +23,14 @@ const clientMetadataSchema = z.object({
     .min(1)
     .max(MAX_REDIRECT_URIS),
   token_endpoint_auth_method: z.literal("none", 'only public clients are supported: use "none"').optional(),
+  // Clients may declare grants and response types we don't offer (claude.ai's document lists a third
+  // grant type); those are ignored, since we only ever issue codes and refresh tokens. What we need must be there.
   grant_types: z
-    .array(z.enum(GRANT_TYPES))
+    .array(z.string().max(200))
+    .max(20)
     .refine((g) => g.includes("authorization_code"), "must include authorization_code")
     .optional(),
-  response_types: z.array(z.literal("code")).optional(),
+  response_types: z.array(z.string().max(200)).max(20).refine((r) => r.includes("code"), "must include code").optional(),
   client_name: z.string().max(1000).optional(),
 });
 
